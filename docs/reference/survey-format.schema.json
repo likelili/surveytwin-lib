@@ -1,0 +1,3258 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:surveytwin:survey-format:0.1",
+  "title": "surveytwin standard survey format",
+  "$ref": "#/$defs/Survey",
+  "$defs": {
+    "Survey": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "enum": [
+            "0.1"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Variable"
+          }
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Question"
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Block"
+          }
+        },
+        "flow": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FlowNode"
+          }
+        },
+        "source": {
+          "description": "Where an imported survey came from, and what the reader found."
+        }
+      },
+      "required": [
+        "schema_version",
+        "id"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A survey in the standard format."
+    },
+    "Variable": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "from_outside": {
+          "type": "boolean",
+          "description": "The value comes from outside the survey (a panel, a link)."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Question": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "export_name": {
+          "type": "string",
+          "description": "The column name in exports (Qualtrics DataExportTag)."
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Content"
+          }
+        },
+        "response": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Response"
+            }
+          ],
+          "description": "Absent for an instruction, which is shown and never answered."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "timing",
+            "meta_info",
+            "captcha",
+            "unsupported"
+          ],
+          "description": "A source question that is never simulated."
+        },
+        "show_if": {
+          "$ref": "#/$defs/Condition"
+        },
+        "skip": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SkipRule"
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/Presentation"
+        },
+        "source": {
+          "$ref": "#/$defs/QuestionSource"
+        }
+      },
+      "required": [
+        "id",
+        "content"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A question, or an instruction when it has no response."
+    },
+    "Content": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TextContent"
+        },
+        {
+          "$ref": "#/$defs/ImageContent"
+        },
+        {
+          "$ref": "#/$defs/TableContent"
+        }
+      ],
+      "description": "Something a question shows."
+    },
+    "TextContent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "html"
+          ],
+          "description": "'plain' (the default) or 'html' as exported by a platform."
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Text, kept with its line and paragraph breaks."
+    },
+    "Template": {
+      "type": "object",
+      "properties": {
+        "parts": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TextPart"
+              },
+              {
+                "$ref": "#/$defs/RefPart"
+              }
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "parts"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Text with piped values, in order."
+    },
+    "TextPart": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Literal text."
+    },
+    "RefPart": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/Ref"
+        }
+      },
+      "required": [
+        "ref"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A piped value."
+    },
+    "Ref": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VariableRef"
+        },
+        {
+          "$ref": "#/$defs/AnswerRef"
+        },
+        {
+          "$ref": "#/$defs/LoopRef"
+        },
+        {
+          "$ref": "#/$defs/RandomRef"
+        },
+        {
+          "$ref": "#/$defs/SourceRef"
+        }
+      ],
+      "description": "A piped value."
+    },
+    "VariableRef": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "variable"
+        },
+        "variable": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The variable's name."
+        }
+      },
+      "required": [
+        "scope",
+        "variable"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A survey variable (Qualtrics embedded data): ${e://Field/name}."
+    },
+    "AnswerRef": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "answer"
+        },
+        "question": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1,
+          "description": "The question answered earlier."
+        },
+        "field": {
+          "type": "string",
+          "enum": [
+            "selected_choices",
+            "selected_choices_recode",
+            "selected_choices_text_entry",
+            "unselected_choices",
+            "displayed_choices",
+            "undisplayed_choices",
+            "all_choices",
+            "selected_count",
+            "choice_label",
+            "choice_recode",
+            "text_entry",
+            "number_entry",
+            "question_text"
+          ],
+          "description": "Which part of the answer."
+        },
+        "item": {
+          "type": "string",
+          "minLength": 1,
+          "description": "An option, statement or field ID, for fields that name one."
+        }
+      },
+      "required": [
+        "scope",
+        "question",
+        "field"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Part of an earlier answer: ${q://QID/...}."
+    },
+    "LoopRef": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "loop"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A column of the repeat table."
+        },
+        "value": {
+          "type": "string",
+          "enum": [
+            "current_index",
+            "total"
+          ],
+          "description": "The repeat's position or length."
+        }
+      },
+      "required": [
+        "scope"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A value of the current repeat row: ${lm://Field/1}, ${lm://CurrentLoopNumber}, ${lm://TotalLoops}."
+    },
+    "RandomRef": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "random"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "int",
+            "float"
+          ]
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "scope",
+        "kind",
+        "min",
+        "max"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A random number drawn once per participant and place: ${rand://int/1:10}."
+    },
+    "SourceRef": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "source"
+        },
+        "expression": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "scope",
+        "expression"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A piped expression of the source platform with no standard form, kept as written."
+    },
+    "ImageContent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "image"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alt": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "source"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "An image shown with the question."
+    },
+    "TableContent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "table"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TableColumn"
+          },
+          "minItems": 1
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TableRow"
+          },
+          "minItems": 1
+        },
+        "caption": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "corner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "The label above the row labels."
+        }
+      },
+      "required": [
+        "type",
+        "columns",
+        "rows"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A table shown as stimulus (not a response grid): every cell keeps its row and column."
+    },
+    "TableColumn": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "TableRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "cells": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/Template"
+              }
+            ],
+            "description": "Text, or {\"parts\": [...]} when it pipes values."
+          },
+          "description": "Cell text by column ID."
+        }
+      },
+      "required": [
+        "id",
+        "cells"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Response": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ChoiceResponse"
+        },
+        {
+          "$ref": "#/$defs/TextResponse"
+        },
+        {
+          "$ref": "#/$defs/NumberResponse"
+        },
+        {
+          "$ref": "#/$defs/MatrixResponse"
+        },
+        {
+          "$ref": "#/$defs/FormResponse"
+        },
+        {
+          "$ref": "#/$defs/RankingResponse"
+        },
+        {
+          "$ref": "#/$defs/AllocationResponse"
+        },
+        {
+          "$ref": "#/$defs/GroupResponse"
+        },
+        {
+          "$ref": "#/$defs/BestWorstResponse"
+        }
+      ],
+      "description": "What a question asks for."
+    },
+    "ChoiceResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "choice"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "multiple"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "minItems": 1
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "min_selected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_selected": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "default": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "description": "Options selected before the respondent answers."
+        },
+        "randomization": {
+          "$ref": "#/$defs/Randomization"
+        }
+      },
+      "required": [
+        "type",
+        "mode",
+        "options"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "One option, or several."
+    },
+    "Option": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "code": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "The value exported for this option (a recode); the ID when absent."
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        },
+        "write_in": {
+          "type": "boolean",
+          "description": "The option has a text box for the respondent's own words."
+        },
+        "show_if": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Condition"
+            }
+          ],
+          "description": "The option is shown only when this holds."
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "An answer option, a scale point, a ranked item or an allocation item."
+    },
+    "Media": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A link, a data: address, or a path the caller resolves."
+        },
+        "alt": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "An image."
+    },
+    "Condition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ConditionGroup"
+        },
+        {
+          "$ref": "#/$defs/ConditionGroup"
+        },
+        {
+          "$ref": "#/$defs/NotCondition"
+        },
+        {
+          "$ref": "#/$defs/ChoiceCondition"
+        },
+        {
+          "$ref": "#/$defs/ChoiceCondition"
+        },
+        {
+          "$ref": "#/$defs/DisplayCondition"
+        },
+        {
+          "$ref": "#/$defs/DisplayCondition"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/Comparison"
+        },
+        {
+          "$ref": "#/$defs/ConstantCondition"
+        },
+        {
+          "$ref": "#/$defs/ConstantCondition"
+        },
+        {
+          "$ref": "#/$defs/SourceCondition"
+        }
+      ],
+      "description": "A condition, as a tree. Combined conditions are read left to right."
+    },
+    "ConditionGroup": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "and",
+            "or"
+          ]
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "op",
+        "args"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "All ('and') or any ('or') of several conditions."
+    },
+    "NotCondition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "not"
+        },
+        "arg": {
+          "$ref": "#/$defs/Condition"
+        }
+      },
+      "required": [
+        "op",
+        "arg"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "ChoiceCondition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "selected",
+            "not_selected"
+          ]
+        },
+        "question": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "option": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1,
+          "description": "The option ID (for a grid, a scale point's ID: selected when any statement got it)."
+        },
+        "loop": {
+          "type": "string",
+          "enum": [
+            "all",
+            "any"
+          ],
+          "description": "In a repeated block: every row ('all') or some row ('any')."
+        },
+        "description": {
+          "type": "string",
+          "description": "How the source platform describes this condition."
+        }
+      },
+      "required": [
+        "op",
+        "question",
+        "option"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Whether an option was selected."
+    },
+    "DisplayCondition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "displayed",
+            "not_displayed"
+          ]
+        },
+        "question": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "option": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "question"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Whether a question (or one of its options) was shown."
+    },
+    "Comparison": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "lte",
+            "gt",
+            "gte",
+            "contains",
+            "not_contains",
+            "matches",
+            "empty",
+            "not_empty"
+          ]
+        },
+        "left": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            }
+          ],
+          "description": "A variable, part of an answer, or a repeat value."
+        },
+        "right": {
+          "anyOf": [
+            {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "The value compared with; omitted for 'empty' and 'not_empty'."
+        },
+        "ignore_case": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "left"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A comparison of a value with another."
+    },
+    "ConstantCondition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Always true or always false ('If True' / 'If False')."
+    },
+    "SourceCondition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "source"
+        },
+        "qualtrics": {
+          "description": "The condition as the source platform wrote it."
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "qualtrics"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A condition with no standard form (a device, quota or location test), kept as written."
+    },
+    "Randomization": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "type": "string",
+          "enum": [
+            "shuffle",
+            "random_reverse",
+            "positions",
+            "source"
+          ],
+          "description": "'shuffle': a random order (of 'take' drawn at random, when set); 'random_reverse': reversed for a random half of participants; 'positions': each position pinned or drawn; 'source': a source platform setting with no standard form, kept and reported, not run."
+        },
+        "take": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "('shuffle') Show only this many, drawn at random."
+        },
+        "consistent": {
+          "type": "boolean",
+          "description": "('random_reverse') Reverse every such question for the same participants."
+        },
+        "positions": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[^\\s]+$",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/Draw"
+              }
+            ]
+          },
+          "description": "('positions') One entry per shown position: a pinned option, or a draw."
+        },
+        "shuffled": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "description": "('positions') The options drawn into 'shuffled' slots, in random order."
+        },
+        "subset": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "description": "('positions') The options a 'subset' slot draws from."
+        },
+        "subset_take": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "('positions') How many the 'subset' draws."
+        },
+        "hidden": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "description": "('positions') Options never shown."
+        },
+        "qualtrics": {
+          "description": "('source') The setting as the source platform wrote it."
+        }
+      },
+      "required": [
+        "order"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "How options (or rows) are ordered for each participant."
+    },
+    "Draw": {
+      "type": "object",
+      "properties": {
+        "draw": {
+          "type": "string",
+          "enum": [
+            "shuffled",
+            "subset"
+          ]
+        }
+      },
+      "required": [
+        "draw"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A position filled by a draw."
+    },
+    "TextResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "min_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "number",
+            "email",
+            "phone",
+            "date",
+            "zip",
+            "us_state",
+            "text_only"
+          ],
+          "description": "A named content check."
+        },
+        "number": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/NumberCheck"
+            }
+          ],
+          "description": "The limits of a 'number' format."
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text already in the box."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Free text."
+    },
+    "NumberCheck": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "NumberResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "number"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number",
+          "minimum": 0
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_applicable": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/NotApplicable"
+            }
+          ],
+          "description": "An answer that is not a number."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A number (typed, or on a slider, scale or stars)."
+    },
+    "NotApplicable": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "MatrixResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "matrix"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "per_row",
+            "per_cell"
+          ],
+          "description": "One answer per row, or one per row and column."
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixRow"
+          },
+          "minItems": 1
+        },
+        "row_response": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Response"
+            }
+          ],
+          "description": "('per_row') The response every row takes."
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixColumn"
+          },
+          "description": "('per_cell') The columns."
+        },
+        "cell_response": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Response"
+            }
+          ],
+          "description": "('per_cell') The response every cell takes."
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SumConstraint"
+          }
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "randomization": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Randomization"
+            }
+          ],
+          "description": "How the rows are ordered."
+        }
+      },
+      "required": [
+        "type",
+        "mode",
+        "rows"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A grid of statements."
+    },
+    "MatrixRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        },
+        "show_if": {
+          "$ref": "#/$defs/Condition"
+        },
+        "left_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "A bipolar row's left end."
+        },
+        "right_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "A bipolar row's right end."
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[^\\s]+$",
+                "minLength": 1
+              }
+            }
+          ],
+          "description": "The row's preset answer: a number for a number row, option IDs for a choice row."
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A statement of a grid."
+    },
+    "MatrixColumn": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "code": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        },
+        "show_if": {
+          "$ref": "#/$defs/Condition"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A column of a grid that asks one answer per cell."
+    },
+    "SumConstraint": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "sum_equals"
+        },
+        "axis": {
+          "type": "string",
+          "enum": [
+            "row",
+            "column"
+          ]
+        },
+        "total": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "axis",
+        "total"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "FormResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "form"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FormField"
+          },
+          "minItems": 1
+        },
+        "field_response": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TextResponse"
+            }
+          ],
+          "description": "The checks every field's text gets (length, format)."
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "fields"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Several labelled text boxes."
+    },
+    "FormField": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        },
+        "show_if": {
+          "$ref": "#/$defs/Condition"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text already in the box."
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "RankingResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "ranking"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "minItems": 1
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "min_ranked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_ranked": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "default": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RankDefault"
+          }
+        },
+        "randomization": {
+          "$ref": "#/$defs/Randomization"
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A strict order of items, 1 the highest."
+    },
+    "RankDefault": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "rank": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "item",
+        "rank"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "AllocationResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "allocation"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "minItems": 1
+        },
+        "total": {
+          "type": "number",
+          "description": "What the amounts add up to; 100 when absent."
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "min": {
+          "type": "number",
+          "description": "The least one item may get."
+        },
+        "max": {
+          "type": "number",
+          "description": "The most one item may get."
+        },
+        "default": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Preset amounts by item ID."
+        },
+        "randomization": {
+          "$ref": "#/$defs/Randomization"
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "An amount split across items that adds up to a total."
+    },
+    "GroupResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "group"
+        },
+        "layout": {
+          "const": "side_by_side"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GroupField"
+          },
+          "minItems": 1
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "randomization": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Randomization"
+            }
+          ],
+          "description": "How each column's options are ordered."
+        }
+      },
+      "required": [
+        "type",
+        "layout",
+        "fields"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Several grids side by side, each column with its own statements and scale."
+    },
+    "GroupField": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "export_name": {
+          "type": "string",
+          "description": "The column's name in exports."
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        },
+        "response": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/MatrixResponse"
+            }
+          ],
+          "description": "The column: its statements and the answer each takes."
+        },
+        "source": {}
+      },
+      "required": [
+        "id",
+        "label",
+        "response"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "One column of a side-by-side question."
+    },
+    "BestWorstResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "best_worst"
+        },
+        "best_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "worst_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "options_source": {
+          "const": "shown_items"
+        }
+      },
+      "required": [
+        "type",
+        "best_label",
+        "worst_label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "The best and the worst of the items shown, two different ones."
+    },
+    "SkipRule": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "when": {
+          "$ref": "#/$defs/Condition"
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A later question's ID, 'end_of_block' or 'end_of_survey'."
+        },
+        "description": {
+          "type": "string"
+        },
+        "source": {}
+      },
+      "required": [
+        "when",
+        "to"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "After answering, jump ahead when a condition holds."
+    },
+    "Presentation": {
+      "type": "object",
+      "properties": {
+        "control": {
+          "type": "string",
+          "enum": [
+            "list",
+            "horizontal",
+            "columns",
+            "dropdown",
+            "select_box",
+            "single_line",
+            "multi_line",
+            "essay",
+            "password",
+            "slider",
+            "bar",
+            "stars",
+            "number_scale",
+            "drag_and_drop",
+            "text_boxes",
+            "bipolar",
+            "carousel",
+            "graphic"
+          ],
+          "description": "How the response is shown (it can change how the question is described to the model, never what is asked)."
+        }
+      },
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "QuestionSource": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {},
+          "description": "Source settings that change nothing simulated, kept as read."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Block": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SurveyBlock"
+        },
+        {
+          "$ref": "#/$defs/ConjointBlock"
+        },
+        {
+          "$ref": "#/$defs/MaxDiffBlock"
+        }
+      ]
+    },
+    "SurveyBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "survey"
+        },
+        "title": {
+          "type": "string"
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "description": "The block's questions, in order."
+        },
+        "randomization": {
+          "$ref": "#/$defs/BlockRandomization"
+        },
+        "repeat": {
+          "$ref": "#/$defs/Repeat"
+        },
+        "source": {}
+      },
+      "required": [
+        "id",
+        "kind",
+        "questions"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "BlockRandomization": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "type": "string",
+          "enum": [
+            "shuffle",
+            "source"
+          ],
+          "description": "'shuffle': the block's questions in a random order; 'source': a setting with no standard form, kept and reported, not run."
+        },
+        "qualtrics": {
+          "description": "('source') The setting as the source platform wrote it."
+        }
+      },
+      "required": [
+        "order"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Repeat": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepeatRow"
+          },
+          "minItems": 1,
+          "description": "One run of the block per row, in this order."
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "fixed",
+            "shuffle"
+          ],
+          "description": "'shuffle' runs the rows in a random order."
+        },
+        "take": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "('shuffle') Run only this many rows, drawn at random."
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "The block runs once per row (Qualtrics Loop & Merge); its question IDs get the row ID in front (1_QID5)."
+    },
+    "RepeatRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/Template"
+              }
+            ],
+            "description": "Text, or {\"parts\": [...]} when it pipes values."
+          },
+          "description": "The row's values by field name; ${lm://Field/name} pipes one."
+        }
+      },
+      "required": [
+        "id",
+        "values"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "ConjointBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "conjoint"
+        },
+        "title": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Attribute"
+          },
+          "minItems": 1
+        },
+        "alternatives": {
+          "$ref": "#/$defs/Alternatives"
+        },
+        "constraints": {
+          "$ref": "#/$defs/ConjointConstraints"
+        },
+        "design": {
+          "$ref": "#/$defs/ConjointDesign"
+        },
+        "presentation": {
+          "$ref": "#/$defs/ConjointPresentation"
+        },
+        "response": {
+          "$ref": "#/$defs/ConjointResponse"
+        },
+        "administration": {
+          "$ref": "#/$defs/Administration"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "attributes",
+        "alternatives",
+        "design"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A choice-based conjoint: the engine draws each participant's profiles from the attribute levels and rules."
+    },
+    "Attribute": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "categorical",
+            "numeric",
+            "price"
+          ]
+        },
+        "currency": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "levels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Level"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "levels"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Level": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "A number or price value, distinct from the label."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Relative chance of drawing this level; 0 never draws it. Default 1."
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Alternatives": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "generic",
+            "fixed"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "('generic') Alternatives per task."
+        },
+        "label": {
+          "type": "string",
+          "description": "('generic') Label template; {letter} and {number} name the position. Default 'Option {letter}'."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Alternative"
+          },
+          "minItems": 1,
+          "description": "('fixed') The alternatives every task shows."
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Alternative": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "fixed_levels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "description": "Attribute ID to the level this alternative always has."
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "ConjointConstraints": {
+      "type": "object",
+      "properties": {
+        "applicability": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Applicability"
+          }
+        },
+        "forbidden_profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^[^\\s]+$",
+              "minLength": 1
+            }
+          },
+          "description": "Each map of attribute ID to level ID is a combination never shown in one profile."
+        }
+      },
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Applicability": {
+      "type": "object",
+      "properties": {
+        "row_attribute": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "row_levels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "column_attribute": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "column_levels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "allowed": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "minItems": 1
+          },
+          "minItems": 1,
+          "description": "1 where the row level may go with the column level."
+        }
+      },
+      "required": [
+        "row_attribute",
+        "row_levels",
+        "column_attribute",
+        "column_levels",
+        "allowed"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "Which levels of two attributes may appear together in one profile."
+    },
+    "ConjointDesign": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "generated",
+            "supplied"
+          ]
+        },
+        "generator": {
+          "type": "string",
+          "enum": [
+            "random_valid_profiles"
+          ]
+        },
+        "tasks_per_participant": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "generation_timing": {
+          "type": "string",
+          "enum": [
+            "block_entry"
+          ]
+        },
+        "duplicates": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "within_task",
+            "within_participant"
+          ],
+          "description": "Where two identical profiles may not appear. Default 'within_task'."
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Draws tried per profile before the design is called infeasible. Default 1000."
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DesignVersion"
+          },
+          "minItems": 1,
+          "description": "('supplied') Complete task versions."
+        },
+        "assignment": {
+          "type": "string",
+          "enum": [
+            "random",
+            "by_index"
+          ],
+          "description": "('supplied') How a participant gets a version."
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "DesignVersion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DesignTask"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "tasks"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "DesignTask": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DesignAlternative"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "alternatives"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "DesignAlternative": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "levels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[^\\s]+$",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id",
+        "levels"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "ConjointPresentation": {
+      "type": "object",
+      "properties": {
+        "instruction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "layout": {
+          "type": "string",
+          "enum": [
+            "table",
+            "list"
+          ],
+          "description": "How a task shows its alternatives: a table with a column per alternative and a row per attribute ('table', the default), or each alternative with a line per attribute ('list')."
+        },
+        "attribute_order": {
+          "$ref": "#/$defs/OrderSetting"
+        },
+        "alternative_order": {
+          "$ref": "#/$defs/OrderSetting"
+        }
+      },
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "OrderSetting": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "fixed",
+            "shuffle"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "participant",
+            "task"
+          ],
+          "description": "Draw the order once per participant, or once per task."
+        },
+        "fixed_positions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "ID to a 1-based position kept while the rest shuffle."
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "ConjointResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "choice"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "request"
+            }
+          ]
+        },
+        "outside_option": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/OutsideOption"
+            }
+          ],
+          "description": "An extra option such as 'None of these'."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "OutsideOption": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "code": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Administration": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "type": "string",
+          "enum": [
+            "task",
+            "block"
+          ],
+          "description": "Ask all tasks of the block in one model call, each with its own answer ('block', the default), or one task per call ('task')."
+        }
+      },
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "MaxDiffBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "maxdiff"
+        },
+        "title": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MaxDiffItem"
+          },
+          "minItems": 2
+        },
+        "design": {
+          "$ref": "#/$defs/MaxDiffDesign"
+        },
+        "presentation": {
+          "$ref": "#/$defs/MaxDiffPresentation"
+        },
+        "response": {
+          "$ref": "#/$defs/BestWorstResponse"
+        },
+        "anchor": {
+          "$ref": "#/$defs/Anchor"
+        },
+        "administration": {
+          "$ref": "#/$defs/Administration"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "items",
+        "design",
+        "response"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A best/worst (MaxDiff) block: the engine draws each participant's item subsets."
+    },
+    "MaxDiffItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "code": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Media"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "MaxDiffDesign": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "generated",
+            "supplied"
+          ]
+        },
+        "generator": {
+          "type": "string",
+          "enum": [
+            "uniform_subsets",
+            "balanced_subsets"
+          ]
+        },
+        "tasks_per_participant": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "items_per_task": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "generation_timing": {
+          "type": "string",
+          "enum": [
+            "block_entry"
+          ]
+        },
+        "duplicate_tasks": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "forbid"
+          ],
+          "description": "Whether a participant may see the same subset twice. Default 'forbid'."
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MaxDiffVersion"
+          },
+          "minItems": 1,
+          "description": "('supplied') Each version's tasks, as lists of item IDs."
+        },
+        "assignment": {
+          "type": "string",
+          "enum": [
+            "random",
+            "by_index"
+          ]
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "MaxDiffVersion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[^\\s]+$",
+              "minLength": 1
+            },
+            "minItems": 2
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "tasks"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "MaxDiffPresentation": {
+      "type": "object",
+      "properties": {
+        "instruction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "Text, or {\"parts\": [...]} when it pipes values."
+        },
+        "item_order": {
+          "$ref": "#/$defs/OrderSetting"
+        }
+      },
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Anchor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Content"
+          }
+        },
+        "response": {
+          "$ref": "#/$defs/ChoiceResponse"
+        }
+      },
+      "required": [
+        "id",
+        "content",
+        "response"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      },
+      "description": "A follow-up after each task about the same items (anchored MaxDiff)."
+    },
+    "FlowNode": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ShowBlock"
+        },
+        {
+          "$ref": "#/$defs/SetVariables"
+        },
+        {
+          "$ref": "#/$defs/Branch"
+        },
+        {
+          "$ref": "#/$defs/Randomize"
+        },
+        {
+          "$ref": "#/$defs/Group"
+        },
+        {
+          "$ref": "#/$defs/End"
+        }
+      ],
+      "description": "A step of the survey flow."
+    },
+    "ShowBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "type": {
+          "const": "show_block"
+        },
+        "block": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "block"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "SetVariables": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "type": {
+          "const": "set_variables"
+        },
+        "assignments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Assignment"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "assignments"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Assignment": {
+      "type": "object",
+      "properties": {
+        "variable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Template"
+            }
+          ],
+          "description": "The value set; text may pipe other values."
+        },
+        "from_outside": {
+          "type": "boolean",
+          "description": "The value comes from outside the survey (a panel, a link)."
+        },
+        "source": {}
+      },
+      "required": [
+        "variable"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Branch": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "type": {
+          "const": "branch"
+        },
+        "when": {
+          "$ref": "#/$defs/Condition"
+        },
+        "then": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FlowNode"
+          },
+          "description": "The steps run when the condition holds."
+        },
+        "else": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FlowNode"
+          },
+          "description": "The steps run when it does not (decided before 'then' runs)."
+        },
+        "source": {}
+      },
+      "required": [
+        "id",
+        "type",
+        "when",
+        "then"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Randomize": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "type": {
+          "const": "randomize"
+        },
+        "take": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evenly": {
+          "type": "boolean",
+          "description": "Balance the arms across participants."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FlowNode"
+          }
+        },
+        "source": {}
+      },
+      "required": [
+        "id",
+        "type",
+        "take",
+        "children"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "Group": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "type": {
+          "const": "group"
+        },
+        "title": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FlowNode"
+          }
+        },
+        "source": {}
+      },
+      "required": [
+        "id",
+        "type",
+        "children"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    },
+    "End": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^\\s]+$",
+          "minLength": 1
+        },
+        "type": {
+          "const": "end"
+        },
+        "source": {}
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x\\-": {}
+      }
+    }
+  }
+}

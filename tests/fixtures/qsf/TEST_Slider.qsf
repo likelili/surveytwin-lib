@@ -1,0 +1,2967 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_a5b1Ed0epXZNAou",
+    "SurveyName": "TEST Slider",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "UR_EXAMPLE",
+    "SurveyBrandID": "example",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "RS_exvcFSZYi11cnSC",
+    "SurveyStatus": "Inactive",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-05-25 10:47:24",
+    "CreatorID": "UR_EXAMPLE",
+    "LastModified": "2026-05-29 13:53:06",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "BL",
+      "PrimaryAttribute": "Survey Blocks",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "1": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "Slider support fixture",
+          "ID": "BL_SLIDER_SUPPORT",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID39"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID40"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID41"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID42"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "FL",
+      "PrimaryAttribute": "Survey Flow",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Flow": [
+          {
+            "ID": "BL_SLIDER_SUPPORT",
+            "Type": "Standard",
+            "FlowID": "FL_SLIDER"
+          }
+        ],
+        "Properties": {
+          "Count": 1
+        },
+        "FlowID": "FL_1",
+        "Type": "Root"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "PL",
+      "PrimaryAttribute": "Preview Link",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "PreviewType": "Brand",
+        "PreviewID": "2115d612-310b-43cd-93eb-e0d2a24d3064"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "PROJ",
+      "PrimaryAttribute": "CORE",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": "1.1.0",
+      "Payload": {
+        "ProjectCategory": "CORE",
+        "SchemaVersion": "1.1.0"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "QC",
+      "PrimaryAttribute": "Survey Question Count",
+      "SecondaryAttribute": "4",
+      "TertiaryAttribute": null,
+      "Payload": null
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "RS",
+      "PrimaryAttribute": "RS_exvcFSZYi11cnSC",
+      "SecondaryAttribute": "Default Response Set",
+      "TertiaryAttribute": null,
+      "Payload": null
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SCO",
+      "PrimaryAttribute": "Scoring",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "ScoringCategories": [],
+        "ScoringCategoryGroups": [],
+        "ScoringSummaryCategory": null,
+        "ScoringSummaryAfterQuestions": 0,
+        "ScoringSummaryAfterSurvey": 0,
+        "DefaultScoringCategory": null,
+        "AutoScoringCategory": null
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SO",
+      "PrimaryAttribute": "Survey Options",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "BackButton": "false",
+        "SaveAndContinue": "true",
+        "SurveyProtection": "PublicSurvey",
+        "BallotBoxStuffingPrevention": "false",
+        "NoIndex": "Yes",
+        "SecureResponseFiles": "true",
+        "SurveyExpiration": "None",
+        "SurveyTermination": "DefaultMessage",
+        "Header": "",
+        "Footer": "",
+        "ProgressBarDisplay": "None",
+        "PartialData": "+1 week",
+        "ValidationMessage": "",
+        "PreviousButton": "",
+        "NextButton": "",
+        "SurveyTitle": "Qualtrics Survey | Qualtrics Experience Management",
+        "SkinLibrary": "example",
+        "SkinType": "component",
+        "Skin": {
+          "brandingId": "7753963682",
+          "templateId": "*simple",
+          "overrides": null
+        },
+        "NewScoring": 1,
+        "SurveyMetaDescription": "The most powerful, simple and trusted way to gather experience data. Start your journey to experience management and try a free account today.",
+        "SurveyName": "TEST Text/Graphics"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID10",
+      "SecondaryAttribute": "force (default x2 ans)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "force (default x2 ans)",
+        "DefaultChoices": {
+          "2": {
+            "Selected": true
+          },
+          "3": {
+            "Selected": true
+          }
+        },
+        "DataExportTag": "Q9",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "force (default x2 ans)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "RequestResponse",
+            "ForceResponseType": "RequestResponse",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID10"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID11",
+      "SecondaryAttribute": "Answer randomisation (display in random order)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Answer randomisation (display in random order)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q10",
+        "QuestionType": "MC",
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Answer randomisation (display in random order)",
+        "Choices": {
+          "1": {
+            "Display": "1"
+          },
+          "2": {
+            "Display": "2"
+          },
+          "3": {
+            "Display": "3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID11",
+        "Randomization": {
+          "Advanced": null,
+          "Type": "All",
+          "TotalRandSubset": ""
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID12",
+      "SecondaryAttribute": "Present only 3 options",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Present only 3 options",
+        "DefaultChoices": false,
+        "DataExportTag": "Q11",
+        "QuestionType": "MC",
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Present only 3 options",
+        "Choices": {
+          "1": {
+            "Display": "1"
+          },
+          "2": {
+            "Display": "2"
+          },
+          "3": {
+            "Display": "3"
+          },
+          "4": {
+            "Display": "4"
+          },
+          "5": {
+            "Display": "5"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID12",
+        "Randomization": {
+          "Advanced": null,
+          "Type": "SubSet",
+          "ConsistentScaleReversal": true,
+          "TotalRandSubset": "3"
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID13",
+      "SecondaryAttribute": "randomisation flip",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "randomisation flip",
+        "DataExportTag": "Q12",
+        "QuestionType": "MC",
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "randomisation flip",
+        "Choices": {
+          "1": {
+            "Display": "1"
+          },
+          "2": {
+            "Display": "2"
+          },
+          "3": {
+            "Display": "3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID13",
+        "DefaultChoices": false,
+        "GradingData": [],
+        "Randomization": {
+          "Advanced": null,
+          "Type": "ScaleReversal",
+          "ConsistentScaleReversal": false,
+          "TotalRandSubset": ""
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID14",
+      "SecondaryAttribute": "randomisation flip (Consistently reverse the choice order for all questions with this randomizati...",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "randomisation flip (Consistently reverse the choice order for all questions with this randomization option selected)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q13",
+        "QuestionType": "MC",
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "randomisation flip (Consistently reverse the choice order for all questions with this randomizati...",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Choice 1"
+          },
+          "2": {
+            "Display": "Click to write Choice 2"
+          },
+          "3": {
+            "Display": "Click to write Choice 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID14",
+        "Randomization": {
+          "Advanced": null,
+          "Type": "ScaleReversal",
+          "ConsistentScaleReversal": true,
+          "TotalRandSubset": ""
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID15",
+      "SecondaryAttribute": "multiline - tell us about yourself (15 charc max with default)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "multiline - tell us about yourself (15 charc max with default)",
+        "DefaultChoices": {
+          "TEXT": {
+            "Text": "My name is:"
+          }
+        },
+        "DataExportTag": "Q14",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "multiline - tell us about yourself (15 charc max with default)",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "TotalChar",
+            "MinChars": "1",
+            "TotalChars": "15"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID15"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID16",
+      "SecondaryAttribute": "singleline - tell us about yourself (10 charc min with no default) (request)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "singleline - tell us about yourself (10 charc min with no default) (request)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q15",
+        "QuestionType": "TE",
+        "Selector": "SL",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "singleline - tell us about yourself (10 charc min with no default) (request)",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "RequestResponse",
+            "ForceResponseType": "RequestResponse",
+            "Type": "None",
+            "MinChars": "10"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID16"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID17",
+      "SecondaryAttribute": "essay text - tell us abouyt yourself (10-50 charc with default) (force)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "essay text - tell us abouyt yourself (10-50 charc with default) (force)",
+        "DefaultChoices": {
+          "TEXT": {
+            "Text": "Hi I'm:"
+          }
+        },
+        "DataExportTag": "Q16",
+        "QuestionType": "TE",
+        "Selector": "ESTB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "essay text - tell us abouyt yourself (10-50 charc with default) (force)",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "CharRange",
+            "MinChars": "10",
+            "TotalChars": "50"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID17"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID18",
+      "SecondaryAttribute": "password - min 5 charc",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "password - min 5 charc",
+        "DefaultChoices": false,
+        "DataExportTag": "Q17",
+        "QuestionType": "TE",
+        "Selector": "PW",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "password - min 5 charc",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "MinChar",
+            "MinChars": "5"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID18"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID19",
+      "SecondaryAttribute": "Here is a disclaimer my friend!",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Here is a disclaimer my friend!<br>",
+        "DefaultChoices": false,
+        "DataExportTag": "Q18",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Here is a disclaimer my friend!",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID19"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID2",
+      "SecondaryAttribute": "MACOL multi-answer",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "MACOL&nbsp;multi-answer",
+        "DefaultChoices": false,
+        "DataExportTag": "Q2",
+        "QuestionType": "MC",
+        "Selector": "MACOL",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "NumColumns": 2,
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "MACOL multi-answer",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "ChoiceRange",
+            "MinChoices": "2",
+            "MaxChoices": "3"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID2",
+        "SubSelector": "TX"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID20",
+      "SecondaryAttribute": "Here is a diclaimer but in an image friend! DESCRIBE AS ",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Here is a diclaimer but in an image friend! DESCRIBE AS&nbsp;",
+        "DefaultChoices": false,
+        "DataExportTag": "Q19",
+        "QuestionType": "DB",
+        "Selector": "GRB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Here is a diclaimer but in an image friend! DESCRIBE AS ",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID20",
+        "SubSelector": "WTXB",
+        "Graphics": "IM_YZf9B5sCvdJcelw",
+        "GraphicsDescription": "Screenshot 2026-05-25 at 2.10.05\u202fPM.png"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID21",
+      "SecondaryAttribute": "HIII HERE IS ANOTHER IMAGE DESCRIBE AS DEEPLY AS YOU CAN. ANY VISIBLE BRANDING?",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "HIII HERE IS ANOTHER IMAGE DESCRIBE AS DEEPLY AS YOU CAN. ANY VISIBLE BRANDING?",
+        "DefaultChoices": false,
+        "DataExportTag": "Q20",
+        "QuestionType": "DB",
+        "Selector": "GRB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "HIII HERE IS ANOTHER IMAGE DESCRIBE AS DEEPLY AS YOU CAN. ANY VISIBLE BRANDING?",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID21",
+        "SubSelector": "WTXB",
+        "Graphics": "IM_uU1jAwfQRu2BY4v",
+        "GraphicsDescription": "SHOE Example"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID22",
+      "SecondaryAttribute": "Click to write the question text",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Click to write the question text",
+        "DefaultChoices": false,
+        "DataExportTag": "Q21",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Click to write the question text",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID22"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID23",
+      "SecondaryAttribute": "Click to write the question text",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Click to write the question text",
+        "DefaultChoices": false,
+        "DataExportTag": "Q22",
+        "QuestionType": "TE",
+        "Selector": "FORM",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Click to write the question text",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Choice 1"
+          },
+          "2": {
+            "Display": "Click to write Choice 2"
+          },
+          "3": {
+            "Display": "Click to write Choice 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": null
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID23"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID24",
+      "SecondaryAttribute": "Likert, 7 poitns (show first and last)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Likert, 7 poitns (show first and last)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q23",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true,
+          "Autoscale": {
+            "XScale": {
+              "Name": "hedonic",
+              "Type": "category",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "Likert, 7 poitns (show first and last)",
+        "Choices": {
+          "1": {
+            "Display": "statement 1",
+            "ExclusiveAnswer": false
+          },
+          "2": {
+            "Display": "statement 2",
+            "ExclusiveAnswer": false
+          },
+          "3": {
+            "Display": "statement 3",
+            "ExclusiveAnswer": false
+          },
+          "4": {
+            "Display": "Click to write Statement 4",
+            "ExclusiveAnswer": true
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "Validation": {
+          "Settings": {
+            "EnforceRange": null,
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 5,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Dislike a great deal"
+          },
+          "2": {
+            "Display": "&nbsp;"
+          },
+          "3": {
+            "Display": "&nbsp;"
+          },
+          "4": {
+            "Display": "&nbsp;"
+          },
+          "5": {
+            "Display": "Like a great deal"
+          }
+        },
+        "AnswerOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID24",
+        "AnswerColumns": 2,
+        "ClarifyingSymbolType": "None",
+        "SubSelector": "SingleAnswer"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID25",
+      "SecondaryAttribute": "Likert, 7 poitns (show all)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Likert, 7 poitns (show all)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q24",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "SubSelector": "SingleAnswer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "Autoscale": {
+            "XScale": {
+              "Name": "hedonic",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "Likert, 7 poitns (show all)",
+        "Choices": {
+          "1": {
+            "Display": "statement 1"
+          },
+          "2": {
+            "Display": "statement 2"
+          },
+          "3": {
+            "Display": "statement 3"
+          },
+          "4": {
+            "Display": "Click to write Statement 4",
+            "ExclusiveAnswer": true
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 5,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Dislike a great deal"
+          },
+          "2": {
+            "Display": "Dislike somewhat"
+          },
+          "3": {
+            "Display": "Neither like nor dislike"
+          },
+          "4": {
+            "Display": "Like somewhat"
+          },
+          "5": {
+            "Display": "Like a great deal"
+          }
+        },
+        "AnswerOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID25"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID26",
+      "SecondaryAttribute": "Likert, 7 poitns (allow bw 1 and 2)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Likert, 7 poitns (allow bw 1 and 2)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q25",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "SubSelector": "MultipleAnswer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "Autoscale": {
+            "XScale": {
+              "Name": "hedonic",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "MobileFirst": true,
+          "WhiteSpace": "OFF"
+        },
+        "QuestionDescription": "Likert, 7 poitns (allow bw 1 and 2)",
+        "Choices": {
+          "1": {
+            "Display": "statement 1"
+          },
+          "2": {
+            "Display": "statement 2"
+          },
+          "3": {
+            "Display": "statement 3"
+          },
+          "4": {
+            "Display": "Click to write Statement 4",
+            "ExclusiveAnswer": false
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "ChoiceRange",
+            "MinChoices": "1",
+            "MaxChoices": "2"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Dislike a great deal"
+          },
+          "2": {
+            "Display": "Dislike somewhat"
+          },
+          "3": {
+            "Display": "Neither like nor dislike"
+          },
+          "4": {
+            "Display": "Like somewhat"
+          },
+          "5": {
+            "Display": "Like a great deal"
+          }
+        },
+        "AnswerOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID26",
+        "AnswerColumns": 5
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID27",
+      "SecondaryAttribute": "Click to write the question text",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Click to write the question text",
+        "DefaultChoices": false,
+        "DataExportTag": "Q26",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "SubSelector": "SingleAnswer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "Click to write the question text",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Answers": {
+          "1": {
+            "Display": "Click to write Scale Point 1"
+          },
+          "2": {
+            "Display": "Click to write Scale Point 2"
+          },
+          "3": {
+            "Display": "Click to write Scale Point 3"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID27"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID28",
+      "SecondaryAttribute": "Likert, 7 poitns (allow atleast 2)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Likert, 7 poitns (allow atleast 2)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q27",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "SubSelector": "MultipleAnswer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "Autoscale": {
+            "XScale": {
+              "Name": "hedonic",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "Likert, 7 poitns (allow atleast 2)",
+        "Choices": {
+          "1": {
+            "Display": "statement 1"
+          },
+          "2": {
+            "Display": "statement 2"
+          },
+          "3": {
+            "Display": "statement 3"
+          },
+          "4": {
+            "Display": "Click to write Statement 4"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "MinChoices",
+            "MinChoices": "2",
+            "MaxChoices": "2"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Dislike a great deal"
+          },
+          "2": {
+            "Display": "Dislike somewhat"
+          },
+          "3": {
+            "Display": "Neither like nor dislike"
+          },
+          "4": {
+            "Display": "Like somewhat"
+          },
+          "5": {
+            "Display": "Like a great deal"
+          }
+        },
+        "AnswerOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID28"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID29",
+      "SecondaryAttribute": "Likert (Profile) (same - just aesthetic difference?)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Likert (Profile) (same - just aesthetic difference?)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q28",
+        "QuestionType": "Matrix",
+        "Selector": "Profile",
+        "SubSelector": "SingleAnswer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true,
+          "Autoscale": {
+            "XScale": {
+              "Name": "hedonic",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "Likert (Profile) (same - just aesthetic difference?)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "1": {
+              "Display": "Click to write Scale Point 1"
+            },
+            "2": {
+              "Display": "Click to write Scale Point 2"
+            },
+            "3": {
+              "Display": "Click to write Scale Point 3"
+            },
+            "4": {
+              "Display": "Like somewhat"
+            },
+            "5": {
+              "Display": "Like a great deal"
+            }
+          },
+          "2": {
+            "1": {
+              "Display": "Click to write Scale Point 1"
+            },
+            "2": {
+              "Display": "Click to write Scale Point 2"
+            },
+            "3": {
+              "Display": "Click to write Scale Point 3"
+            },
+            "4": {
+              "Display": "Like somewhat"
+            },
+            "5": {
+              "Display": "Like a great deal"
+            }
+          },
+          "3": {
+            "1": {
+              "Display": "Click to write Scale Point 1"
+            },
+            "2": {
+              "Display": "Click to write Scale Point 2"
+            },
+            "3": {
+              "Display": "Click to write Scale Point 3"
+            },
+            "4": {
+              "Display": "Like somewhat"
+            },
+            "5": {
+              "Display": "Like a great deal"
+            }
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID29",
+        "AnswerColumns": 5
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID3",
+      "SecondaryAttribute": "MSB multi-answer",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "MSB multi-answer",
+        "DefaultChoices": false,
+        "DataExportTag": "Q3",
+        "QuestionType": "MC",
+        "Selector": "MSB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "LabelPosition": "BELOW",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "MSB multi-answer",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "ChoiceRange",
+            "MinChoices": "1",
+            "MaxChoices": "2"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID3"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID30",
+      "SecondaryAttribute": "Likert (carousel) (same - just aesthetic difference?)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Likert (carousel) (same - just aesthetic difference?)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q29",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "SubSelector": "SACV",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "MobileFirst": true,
+          "Autoscale": {
+            "XScale": {
+              "Name": "hedonic",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "ShowProgress": false,
+          "AutoadvanceStatements": true
+        },
+        "QuestionDescription": "Likert (carousel) (same - just aesthetic difference?)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Dislike a great deal"
+          },
+          "2": {
+            "Display": "Dislike somewhat"
+          },
+          "3": {
+            "Display": "Neither like nor dislike"
+          },
+          "4": {
+            "Display": "Like somewhat"
+          },
+          "5": {
+            "Display": "Like a great deal"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID30"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID31",
+      "SecondaryAttribute": "Bipolar (show first and last)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Bipolar (show first and last)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q30",
+        "QuestionType": "Matrix",
+        "Selector": "Bipolar",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "Bipolar (show first and last)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1:Right"
+          },
+          "2": {
+            "Display": "Click to write Statement 2:Right"
+          },
+          "3": {
+            "Display": "Click to write Statement 3:Right"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "&nbsp;"
+          },
+          "3": {
+            "Display": "&nbsp;"
+          },
+          "4": {
+            "Display": "&nbsp;"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "AnswerOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID31",
+        "AnswerColumns": 5
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID32",
+      "SecondaryAttribute": "CS (Must total 100, min10, max:100)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "CS (Must total 100, min10, max:100)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q31",
+        "QuestionType": "Matrix",
+        "Selector": "CS",
+        "SubSelector": "WVTB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "MobileFirst": true,
+          "Autoscale": {
+            "XScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            },
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "CSSliderMin": 10,
+          "CSSliderMax": 100
+        },
+        "QuestionDescription": "CS (Must total 100, min10, max:100)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "EnforceRange": "ON",
+            "ForceResponse": "OFF",
+            "ForceResponseType": "ON",
+            "Type": "ChoicesTotal",
+            "ChoiceTotal": "100"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 6,
+        "Answers": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "AnswerOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID32",
+        "ClarifyingSymbolType": "None"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID33",
+      "SecondaryAttribute": "TE (",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "TE (Short text box, min 5)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q32",
+        "QuestionType": "Matrix",
+        "Selector": "TE",
+        "SubSelector": "Short",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "SpecifyLabel",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "TE (",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "MinChar",
+            "MinChars": "5"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Answers": {
+          "1": {
+            "Display": "Click to write Scale Point 1"
+          },
+          "2": {
+            "Display": "Click to write Scale Point 2"
+          },
+          "3": {
+            "Display": "Click to write Scale Point 3"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID33"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID34",
+      "SecondaryAttribute": "TE (Medium text box, max 9)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "TE (Medium text box, max 9)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q33",
+        "QuestionType": "Matrix",
+        "Selector": "TE",
+        "SubSelector": "Medium",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "TE (Medium text box, max 9)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "TotalChar",
+            "MinChars": "10",
+            "TotalChars": "9"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Answers": {
+          "1": {
+            "Display": "Click to write Scale Point 1"
+          },
+          "2": {
+            "Display": "Click to write Scale Point 2"
+          },
+          "3": {
+            "Display": "Click to write Scale Point 3"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID34"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID35",
+      "SecondaryAttribute": "TE (long text box, bw 10 to 100)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "TE (long text box, bw 10 to 100)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q34",
+        "QuestionType": "Matrix",
+        "Selector": "TE",
+        "SubSelector": "Long",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "TE (long text box, bw 10 to 100)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "CharRange",
+            "MinChars": "10",
+            "TotalChars": "100",
+            "ContentType": null,
+            "ValidDateType": "DateWithFormat",
+            "ValidPhoneType": "ValidUSPhone",
+            "ValidZipType": "ValidUSZip",
+            "ValidNumber": {
+              "Min": "",
+              "Max": "",
+              "NumDecimals": ""
+            }
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Answers": {
+          "1": {
+            "Display": "Click to write Scale Point 1"
+          },
+          "2": {
+            "Display": "Click to write Scale Point 2"
+          },
+          "3": {
+            "Display": "Click to write Scale Point 3"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID35"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID36",
+      "SecondaryAttribute": "Click to write the question text",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Click to write the question text",
+        "DefaultChoices": false,
+        "DataExportTag": "Q35",
+        "QuestionType": "Matrix",
+        "Selector": "Likert",
+        "SubSelector": "SingleAnswer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "WhiteSpace": "OFF",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "Click to write the question text",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Answers": {
+          "1": {
+            "Display": "Click to write Scale Point 1"
+          },
+          "2": {
+            "Display": "Click to write Scale Point 2"
+          },
+          "3": {
+            "Display": "Click to write Scale Point 3"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID36"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID37",
+      "SecondaryAttribute": "TE email (long text box)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "TE email (long text box)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q36",
+        "QuestionType": "Matrix",
+        "Selector": "TE",
+        "SubSelector": "Long",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "inline",
+          "ChoiceColumnWidth": 25,
+          "RepeatHeaders": "none",
+          "MobileFirst": true
+        },
+        "QuestionDescription": "TE email (long text box)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Statement 1"
+          },
+          "2": {
+            "Display": "Click to write Statement 2"
+          },
+          "3": {
+            "Display": "Click to write Statement 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "ContentType",
+            "MinChars": "10",
+            "TotalChars": "100",
+            "ContentType": "ValidEmail",
+            "ValidDateType": "DateWithFormat",
+            "ValidPhoneType": "ValidUSPhone",
+            "ValidZipType": "ValidUSZip",
+            "ValidNumber": {
+              "Min": "",
+              "Max": "",
+              "NumDecimals": ""
+            }
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Answers": {
+          "1": {
+            "Display": "Click to write Scale Point 1"
+          },
+          "2": {
+            "Display": "Click to write Scale Point 2"
+          },
+          "3": {
+            "Display": "Click to write Scale Point 3"
+          }
+        },
+        "AnswerOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID37"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID38",
+      "SecondaryAttribute": "Your Address.. (with one pre-filled)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Your Address.. (with one pre-filled)",
+        "DefaultChoices": {
+          "7": {
+            "TEXT": {
+              "Text": "Singapore"
+            }
+          }
+        },
+        "DataExportTag": "Q37",
+        "QuestionType": "TE",
+        "Selector": "FORM",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Your Address.. (with one pre-filled)",
+        "Choices": {
+          "1": {
+            "Display": "Name"
+          },
+          "2": {
+            "Display": "Address"
+          },
+          "3": {
+            "Display": "Address 2"
+          },
+          "4": {
+            "Display": "City"
+          },
+          "5": {
+            "Display": "State"
+          },
+          "6": {
+            "Display": "Postal code"
+          },
+          "7": {
+            "Display": "Country/Region"
+          },
+          "8": {
+            "Display": "Click to write Form Field 8"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 9,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID38"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID39",
+      "SecondaryAttribute": "Slider (3 statements - scale of 0 to 100, 2 decimal points, increments of 10, dont snap to increm...",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Slider (3 statements - scale of 0 to 100, 2 decimal points, increments of 10, dont snap to increments), with not applicable option.",
+        "DefaultChoices": false,
+        "DataExportTag": "Q38",
+        "QuestionType": "Slider",
+        "Selector": "HSLIDER",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "above",
+          "CSSliderMin": 0,
+          "CSSliderMax": 100,
+          "GridLines": 10,
+          "NumDecimals": 2,
+          "ShowValue": true,
+          "StarCount": 5,
+          "StarType": "discrete",
+          "SnapToGrid": false,
+          "CustomStart": false,
+          "NotApplicable": true,
+          "MobileFirst": true
+        },
+        "QuestionDescription": "Slider (3 statements - scale of 0 to 100, 2 decimal points, increments of 10, dont snap to increm...",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Choice 1"
+          },
+          "2": {
+            "Display": "Click to write Choice 2"
+          },
+          "3": {
+            "Display": "Click to write Choice 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 4,
+        "Labels": {
+          "1": {
+            "Display": "Click to write Label 1"
+          },
+          "2": {
+            "Display": "Click to write Label 2"
+          },
+          "3": {
+            "Display": "Click to write Label 3"
+          },
+          "NA": {
+            "Display": "Not Applicable"
+          }
+        },
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID39"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID4",
+      "SecondaryAttribute": "MAVR multi-answer (minimum 2)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "MAVR multi-answer (minimum 2)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q4",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "MAVR multi-answer (minimum 2)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "MinChoices",
+            "MinChoices": "2"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID4"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID40",
+      "SecondaryAttribute": "bars (10-20, increments 2, snap to increments), default 15. answers displayed randomly.",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "bars (10-20, increments 2, snap to increments), default 15. answers displayed randomly.",
+        "DefaultChoices": {
+          "1": {
+            "Value": "15"
+          },
+          "2": {
+            "Value": "15"
+          },
+          "3": {
+            "Value": "15"
+          }
+        },
+        "DataExportTag": "Q39",
+        "QuestionType": "Slider",
+        "Selector": "HBAR",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "above",
+          "CSSliderMin": 10,
+          "CSSliderMax": 20,
+          "GridLines": 2,
+          "NumDecimals": 0,
+          "ShowValue": true,
+          "StarCount": 5,
+          "StarType": "discrete",
+          "CustomStart": true,
+          "NotApplicable": false,
+          "MobileFirst": true,
+          "SnapToGrid": true,
+          "SliderStartPositions": {
+            "1": 0.75,
+            "2": 0.75,
+            "3": 0.75
+          }
+        },
+        "QuestionDescription": "bars (10-20, increments 2, snap to increments), default 15. answers displayed randomly.",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Choice 1"
+          },
+          "2": {
+            "Display": "Click to write Choice 2"
+          },
+          "3": {
+            "Display": "Click to write Choice 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "Labels": [],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID40",
+        "Answers": {
+          "1": {
+            "Display": 10
+          },
+          "2": {
+            "Display": 15
+          },
+          "3": {
+            "Display": 20
+          }
+        },
+        "Randomization": {
+          "Advanced": null,
+          "Type": "All",
+          "TotalRandSubset": ""
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID41",
+      "SecondaryAttribute": "7 stars (continouts - i.e. 0 to 7. so x.xx)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "7 stars (continouts - i.e. 0 to 7. so x.xx)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q40",
+        "QuestionType": "Slider",
+        "Selector": "STAR",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "above",
+          "CSSliderMin": 0,
+          "CSSliderMax": 100,
+          "GridLines": 10,
+          "NumDecimals": "0",
+          "ShowValue": true,
+          "StarCount": 7,
+          "StarType": "continuous"
+        },
+        "QuestionDescription": "7 stars (continouts - i.e. 0 to 7. so x.xx)",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Choice 1"
+          },
+          "2": {
+            "Display": "Click to write Choice 2"
+          },
+          "3": {
+            "Display": "Click to write Choice 3"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "Labels": [],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID41"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID42",
+      "SecondaryAttribute": "5 stars half steps (by 0.5",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "5 stars half steps (by 0.5",
+        "DefaultChoices": false,
+        "DataExportTag": "Q41",
+        "QuestionType": "Slider",
+        "Selector": "STAR",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "TextPosition": "above",
+          "CSSliderMin": 0,
+          "CSSliderMax": 100,
+          "GridLines": 10,
+          "NumDecimals": "0",
+          "ShowValue": true,
+          "StarCount": 5,
+          "StarType": "half"
+        },
+        "QuestionDescription": "5 stars half steps (by 0.5",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Choice 1"
+          },
+          "2": {
+            "Display": "Click to write Choice 2"
+          },
+          "3": {
+            "Display": "Click to write Choice 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "Labels": [],
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID42"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID5",
+      "SecondaryAttribute": "MAHR (Single)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "MAHR (Single)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q5",
+        "QuestionType": "MC",
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "LabelPosition": "BELOW",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "MAHR (Single)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID5"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID6",
+      "SecondaryAttribute": "MAVR (Single)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "MAVR (Single)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q5",
+        "QuestionType": "MC",
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "MAVR (Single)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID6"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID7",
+      "SecondaryAttribute": "MAHR (Multiple)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "MAHR (Multiple)",
+        "DefaultChoices": false,
+        "DataExportTag": "Q6",
+        "QuestionType": "MC",
+        "Selector": "MAHR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "LabelPosition": "BELOW"
+        },
+        "QuestionDescription": "MAHR (Multiple)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID7"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID8",
+      "SecondaryAttribute": "Click to write the question text",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Click to write the question text",
+        "DefaultChoices": false,
+        "DataExportTag": "Q7",
+        "QuestionType": "MC",
+        "Selector": "DL",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "Click to write the question text",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID8"
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID9",
+      "SecondaryAttribute": "request (default x1)",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "request (default x1)",
+        "DefaultChoices": {
+          "4": {
+            "Selected": true
+          }
+        },
+        "DataExportTag": "Q8",
+        "QuestionID": "QID9",
+        "QuestionType": "MC",
+        "Selector": "DL",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": true
+            }
+          }
+        },
+        "QuestionDescription": "request (default x1)",
+        "Choices": {
+          "1": {
+            "Display": "Strongly agree"
+          },
+          "2": {
+            "Display": "Somewhat agree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat disagree"
+          },
+          "5": {
+            "Display": "Strongly disagree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "RequestResponse",
+            "ForceResponseType": "RequestResponse",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "DynamicChoicesData": []
+      }
+    },
+    {
+      "SurveyID": "SV_a5b1Ed0epXZNAou",
+      "Element": "STAT",
+      "PrimaryAttribute": "Survey Statistics",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "MobileCompatible": false,
+        "ID": "Survey Statistics"
+      }
+    }
+  ]
+}

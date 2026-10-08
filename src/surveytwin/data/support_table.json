@@ -1,0 +1,293 @@
+{
+  "version": "2026-10-08",
+  "source": "The Qualtrics features surveytwin reads, and what it does with each",
+  "levels": {
+    "Full": "executed as Qualtrics does",
+    "Partial": "common cases executed, named edge cases simplified",
+    "Detected": "found and reported, not executed",
+    "Not supported": "found and reported; the question gets a blank column and is never shown to a twin",
+    "Not modeled": "deliberately ignored"
+  },
+  "features": [
+    {
+      "id": "question_type.multiple_choice",
+      "area": "Question type",
+      "feature": "Multiple choice, single and multiple answer",
+      "level": "Full",
+      "what_the_library_does": "Multiple answer becomes one yes/no question per option; text-entry options become extra open questions"
+    },
+    {
+      "id": "question_type.text_entry",
+      "area": "Question type",
+      "feature": "Text entry (single line, essay, form field)",
+      "level": "Full",
+      "what_the_library_does": "One open question each; form fields split into one question per field (form field: Partial)"
+    },
+    {
+      "id": "question_type.text_graphic",
+      "area": "Question type",
+      "feature": "Text / graphic",
+      "level": "Full",
+      "what_the_library_does": "Shown as context, never asked"
+    },
+    {
+      "id": "question_type.matrix",
+      "area": "Question type",
+      "feature": "Matrix (Likert, bipolar, profile, multiple answer, text entry, constant sum rows)",
+      "level": "Full",
+      "what_the_library_does": "One question per row, or per row and column; MaxDiff and rank-order matrices simplified"
+    },
+    {
+      "id": "question_type.slider",
+      "area": "Question type",
+      "feature": "Slider, number scale, star rating",
+      "level": "Full",
+      "what_the_library_does": "One numeric question per statement, with range, step and decimals enforced"
+    },
+    {
+      "id": "question_type.rank_order",
+      "area": "Question type",
+      "feature": "Rank order (drag and drop)",
+      "level": "Full",
+      "what_the_library_does": "One unique-rank question per item"
+    },
+    {
+      "id": "question_type.side_by_side",
+      "area": "Question type",
+      "feature": "Side by side",
+      "level": "Full",
+      "what_the_library_does": "One question per column and row, each column with its own scale"
+    },
+    {
+      "id": "question_type.constant_sum",
+      "area": "Question type",
+      "feature": "Constant sum",
+      "level": "Partial",
+      "what_the_library_does": "Answers rescaled to the total; input style not distinguished"
+    },
+    {
+      "id": "question_type.timing_meta_captcha",
+      "area": "Question type",
+      "feature": "Timing, meta info, captcha",
+      "level": "Detected",
+      "what_the_library_does": "Skipped; no timings or device data invented"
+    },
+    {
+      "id": "experiment.conjoint",
+      "area": "Experiment (standard format)",
+      "feature": "Conjoint block: generated designs (random valid profiles) or supplied ones, generic or fixed alternatives, level weights, applicability matrices, forbidden combinations, duplicate rules, attribute and alternative order, an outside option",
+      "level": "Full",
+      "what_the_library_does": "Each twin's tasks are drawn from the run's seed and kept; each task shows its alternatives as a table (or a list), level pictures in their cells; one choice per task, all tasks of a block in one model call by default (or one task per call); what each twin was shown is recorded and exported"
+    },
+    {
+      "id": "experiment.maxdiff",
+      "area": "Experiment (standard format)",
+      "feature": "MaxDiff block: uniform or balanced item subsets, or supplied ones, item order, best and worst labels, an anchored follow-up",
+      "level": "Full",
+      "what_the_library_does": "Best and worst are asked together and must differ, checked after the answers come back; a pair naming one item twice is recorded as skipped for a rerun to ask again (never asked again during the run); what each twin was shown is recorded and exported"
+    },
+    {
+      "id": "question_type.unsupported",
+      "area": "Question type",
+      "feature": "Net Promoter Score, pick-group-rank, drill down, heat map, hot spot, signature, file upload, calendar, map, highlight, video, tree testing, Qualtrics conjoint and MaxDiff projects (a QSF does not hold their designs)",
+      "level": "Not supported",
+      "what_the_library_does": "Reported; blank column"
+    },
+    {
+      "id": "question_option.choice_randomization",
+      "area": "Question option",
+      "feature": "Choice randomization",
+      "level": "Full",
+      "what_the_library_does": "Random order, subsets, reversal, fixed and randomized slots; reversal groups are reported, not executed"
+    },
+    {
+      "id": "question_option.display_logic",
+      "area": "Question option",
+      "feature": "Display logic",
+      "level": "Partial",
+      "what_the_library_does": "Conditions on embedded data resolve up front; conditions on answers resolve in staged runs"
+    },
+    {
+      "id": "question_option.choice_display_logic",
+      "area": "Question option",
+      "feature": "Display logic on single choices",
+      "level": "Partial",
+      "what_the_library_does": "Applied in both run modes: an option, matrix statement, scale point or text-entry form field is shown only when its condition holds, and a question left with none is not shown; a condition on an answer makes the survey staged. Not applied to the rows of a side-by-side question"
+    },
+    {
+      "id": "question_option.skip_logic",
+      "area": "Question option",
+      "feature": "Skip logic",
+      "level": "Partial",
+      "what_the_library_does": "Single-choice selected / not selected rules jumping forward, to end of block, or to end of survey"
+    },
+    {
+      "id": "question_option.recode_values",
+      "area": "Question option",
+      "feature": "Recode values",
+      "level": "Full",
+      "what_the_library_does": "Logic uses authored IDs; recodes apply only in the values export"
+    },
+    {
+      "id": "question_option.default_choices",
+      "area": "Question option",
+      "feature": "Default choices",
+      "level": "Partial",
+      "what_the_library_does": "Shown to the twin as the pre-filled value; never substituted for a skipped answer"
+    },
+    {
+      "id": "question_option.validation",
+      "area": "Question option",
+      "feature": "Validation",
+      "level": "Full",
+      "what_the_library_does": "Count, numeric, rank, sum and length rules shown in the prompt and enforced after the answer; custom validation reported"
+    },
+    {
+      "id": "question_option.carry_forward",
+      "area": "Question option",
+      "feature": "Carry forward choices",
+      "level": "Detected",
+      "what_the_library_does": "Reported; only works when the QSF already lists the final choices"
+    },
+    {
+      "id": "question_option.javascript",
+      "area": "Question option",
+      "feature": "JavaScript",
+      "level": "Detected",
+      "what_the_library_does": "Reported, never run"
+    },
+    {
+      "id": "question_option.scoring_translations",
+      "area": "Question option",
+      "feature": "Scoring, translations, AI response clarity",
+      "level": "Not supported",
+      "what_the_library_does": "Reported; the default language only"
+    },
+    {
+      "id": "question_option.export_tag",
+      "area": "Question option",
+      "feature": "Export tag (DataExportTag)",
+      "level": "Full",
+      "what_the_library_does": "Names the export columns"
+    },
+    {
+      "id": "block_option.block_order",
+      "area": "Block option",
+      "feature": "Block order",
+      "level": "Full",
+      "what_the_library_does": "From the survey flow"
+    },
+    {
+      "id": "block_option.question_randomization",
+      "area": "Block option",
+      "feature": "Question randomization",
+      "level": "Partial",
+      "what_the_library_does": "Basic shuffle executed; advanced page and group settings reported"
+    },
+    {
+      "id": "block_option.loop_and_merge",
+      "area": "Block option",
+      "feature": "Loop and merge",
+      "level": "Partial",
+      "what_the_library_does": "Static loop tables expanded, every row, with row randomization and subsets; loops over contacts or answers not supported"
+    },
+    {
+      "id": "block_option.page_breaks",
+      "area": "Block option",
+      "feature": "Page breaks",
+      "level": "Not modeled",
+      "what_the_library_does": "A block is one sequence in the prompt"
+    },
+    {
+      "id": "flow.embedded_data",
+      "area": "Flow element",
+      "feature": "Embedded data",
+      "level": "Full",
+      "what_the_library_does": "Set in flow order, including values set inside branches and randomizer arms; a field never set on a twin's path renders blank"
+    },
+    {
+      "id": "flow.branch",
+      "area": "Flow element",
+      "feature": "Branch",
+      "level": "Partial",
+      "what_the_library_does": "Conditions on answers and embedded data with common operators; quota, device, contact, scoring and custom sources reported"
+    },
+    {
+      "id": "flow.randomizer",
+      "area": "Flow element",
+      "feature": "Randomizer",
+      "level": "Partial",
+      "what_the_library_does": "Independent seeded arms per twin, or balanced schedules when evenly presented"
+    },
+    {
+      "id": "flow.group",
+      "area": "Flow element",
+      "feature": "Group",
+      "level": "Full",
+      "what_the_library_does": "Containment"
+    },
+    {
+      "id": "flow.end_of_survey",
+      "area": "Flow element",
+      "feature": "End of survey",
+      "level": "Partial",
+      "what_the_library_does": "Ends the twin's survey; screenout labels and redirects not acted on"
+    },
+    {
+      "id": "flow.web_service",
+      "area": "Flow element",
+      "feature": "Web service",
+      "level": "Detected",
+      "what_the_library_does": "Never called; fields it would set stay unresolved"
+    },
+    {
+      "id": "flow.unsupported",
+      "area": "Flow element",
+      "feature": "Authenticator, table of contents, quota, reference survey, supplemental data, conjoint group, experience agent",
+      "level": "Not supported",
+      "what_the_library_does": "Reported"
+    },
+    {
+      "id": "piped_text.embedded_data",
+      "area": "Piped text",
+      "feature": "Embedded data ${e://Field/...}",
+      "level": "Full",
+      "what_the_library_does": "Resolved in flow order; fields from URLs or contact lists can be supplied with configure(embedded_data=...)"
+    },
+    {
+      "id": "piped_text.loop_and_merge",
+      "area": "Piped text",
+      "feature": "Loop and merge ${lm://...}",
+      "level": "Partial",
+      "what_the_library_does": "Resolved for static loop tables"
+    },
+    {
+      "id": "piped_text.question",
+      "area": "Piped text",
+      "feature": "Earlier answers ${q://QID.../...}, including slider values",
+      "level": "Partial",
+      "what_the_library_does": "Resolved from the twin's own answers in staged runs: selected, unselected, displayed and all choices, recodes, counts, text and number entries, matrix answers; other forms are named by check(); an answer the data holds no answer for (flagged) pipes blank. The values file codes an answer by the option chosen among those shown, so an option that pipes is coded too"
+    },
+    {
+      "id": "piped_text.random",
+      "area": "Piped text",
+      "feature": "Random numbers ${rand://...}",
+      "level": "Full",
+      "what_the_library_does": "Integer, decimal (13 places) and true/false (1 or 0), drawn per twin and place from the run seed, the same in static and staged runs; any other form is reported and left as written"
+    },
+    {
+      "id": "piped_text.unsupported",
+      "area": "Piped text",
+      "feature": "Dates, location, scoring, quotas, contact fields, math $e{...}",
+      "level": "Not supported",
+      "what_the_library_does": "Reported; left as literal text"
+    },
+    {
+      "id": "media.images",
+      "area": "Media",
+      "feature": "Images in questions, choices, rows, statements and text blocks",
+      "level": "Full",
+      "what_the_library_does": "Sent to the model with labels; unreachable images stop the run unless the caller accepts running without them"
+    }
+  ]
+}

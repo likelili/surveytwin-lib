@@ -1,0 +1,176 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_TEST_RANK_ORDER",
+    "SurveyName": "TEST Rank Order",
+    "SurveyDescription": null,
+    "SurveyLanguage": "EN"
+  },
+  "SurveyElements": [
+    {
+      "SurveyID": "SV_TEST_RANK_ORDER",
+      "Element": "BL",
+      "PrimaryAttribute": "Survey Blocks",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "1": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "Rank Order Block",
+          "ID": "BL_TEST_RANK_ORDER",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID47"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID48"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_TEST_RANK_ORDER",
+      "Element": "FL",
+      "PrimaryAttribute": "Survey Flow",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Flow": [
+          {
+            "ID": "BL_TEST_RANK_ORDER",
+            "Type": "Standard",
+            "FlowID": "FL_3"
+          }
+        ],
+        "Properties": {
+          "Count": 2
+        },
+        "FlowID": "FL_1",
+        "Type": "Root"
+      }
+    },
+    {
+      "SurveyID": "SV_TEST_RANK_ORDER",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID47",
+      "SecondaryAttribute": "choice randomisation",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "choice randomisation",
+        "DefaultChoices": false,
+        "DataExportTag": "Q46",
+        "QuestionType": "RO",
+        "Selector": "DND",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "choice randomisation",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Item 1"
+          },
+          "2": {
+            "Display": "Click to write Item 2"
+          },
+          "3": {
+            "Display": "Click to write Item 3"
+          },
+          "4": {
+            "Display": "Click to write Item 4"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 5,
+        "NextAnswerId": 1,
+        "QuestionID": "QID47",
+        "Randomization": {
+          "Advanced": null,
+          "TotalRandSubset": "",
+          "Type": "All"
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_TEST_RANK_ORDER",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID48",
+      "SecondaryAttribute": "default choices 2,3,1",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "default choices 2,3,1",
+        "DefaultChoices": {
+          "1": {
+            "Value": "3"
+          },
+          "2": {
+            "Value": "1"
+          },
+          "3": {
+            "Value": "2"
+          }
+        },
+        "DataExportTag": "Q47",
+        "QuestionType": "RO",
+        "Selector": "DND",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "default choices 2,3,1",
+        "Choices": {
+          "1": {
+            "Display": "Click to write Item 1"
+          },
+          "2": {
+            "Display": "Click to write Item 2"
+          },
+          "3": {
+            "Display": "Click to write Item 3"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 1,
+        "QuestionID": "QID48"
+      }
+    }
+  ]
+}

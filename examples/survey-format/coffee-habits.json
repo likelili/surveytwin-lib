@@ -1,0 +1,261 @@
+{
+  "schema_version": "0.1",
+  "id": "coffee_habits",
+  "title": "Coffee habits",
+  "description": "A short survey written in the standard format: most response types, display and skip logic, a branch with an else, a random arm, piping and a repeated block.",
+  "language": "EN",
+  "variables": [
+    {"id": "arm", "type": "string", "description": "The message this twin reads."}
+  ],
+  "questions": [
+    {
+      "id": "intro",
+      "content": [{"type": "text", "text": "Thank you for taking part. This survey is about how you buy and drink coffee."}]
+    },
+    {
+      "id": "drinks_coffee",
+      "export_name": "Q1",
+      "content": [{"type": "text", "text": "Do you drink coffee?"}],
+      "response": {
+        "type": "choice",
+        "mode": "single",
+        "required": true,
+        "options": [
+          {"id": "yes", "label": "Yes", "code": 1},
+          {"id": "no", "label": "No", "code": 0}
+        ]
+      },
+      "skip": [{"when": {"op": "selected", "question": "drinks_coffee", "option": "no"}, "to": "end_of_block"}]
+    },
+    {
+      "id": "cups",
+      "export_name": "Q2",
+      "content": [{"type": "text", "text": "On a typical day, how many cups of coffee do you drink?"}],
+      "response": {"type": "number", "required": true, "min": 0, "max": 12, "step": 1, "decimals": 0}
+    },
+    {
+      "id": "where",
+      "export_name": "Q3",
+      "content": [{"type": "text", "text": "Where do you usually get your coffee? Select all that apply."}],
+      "response": {
+        "type": "choice",
+        "mode": "multiple",
+        "min_selected": 1,
+        "max_selected": 3,
+        "options": [
+          {"id": "home", "label": "I make it at home"},
+          {"id": "chain", "label": "A coffee chain"},
+          {"id": "local", "label": "A local café"},
+          {"id": "work", "label": "At work or school"},
+          {"id": "other", "label": "Somewhere else", "write_in": true}
+        ],
+        "randomization": {"order": "shuffle"}
+      }
+    },
+    {
+      "id": "chain_name",
+      "export_name": "Q4",
+      "show_if": {"op": "selected", "question": "where", "option": "chain"},
+      "content": [{"type": "text", "text": "Which coffee chain do you visit most often?"}],
+      "response": {"type": "text", "max_length": 60},
+      "presentation": {"control": "single_line"}
+    },
+    {
+      "id": "importance",
+      "export_name": "Q5",
+      "content": [{"type": "text", "text": "How important is each of these when you choose where to buy coffee?"}],
+      "response": {
+        "type": "matrix",
+        "mode": "per_row",
+        "required": true,
+        "rows": [
+          {"id": "price", "label": "Price"},
+          {"id": "taste", "label": "Taste"},
+          {"id": "speed", "label": "Speed of service"},
+          {"id": "seating", "label": "A place to sit"}
+        ],
+        "row_response": {
+          "type": "choice",
+          "mode": "single",
+          "options": [
+            {"id": "1", "label": "Not at all important"},
+            {"id": "2", "label": "Slightly important"},
+            {"id": "3", "label": "Moderately important"},
+            {"id": "4", "label": "Very important"},
+            {"id": "5", "label": "Extremely important"}
+          ]
+        },
+        "randomization": {"order": "shuffle"}
+      }
+    },
+    {
+      "id": "budget",
+      "export_name": "Q6",
+      "content": [{"type": "text", "text": "Out of 100 dollars spent on coffee in a month, how much goes to each?"}],
+      "response": {
+        "type": "allocation",
+        "total": 100,
+        "items": [
+          {"id": "beans", "label": "Beans or grounds for home"},
+          {"id": "cafe", "label": "Drinks at cafés"},
+          {"id": "gear", "label": "Machines and equipment"}
+        ]
+      }
+    },
+    {
+      "id": "rank_features",
+      "export_name": "Q7",
+      "content": [{"type": "text", "text": "Rank these from most to least important to you."}],
+      "response": {
+        "type": "ranking",
+        "items": [
+          {"id": "organic", "label": "Organic"},
+          {"id": "fair", "label": "Fair trade"},
+          {"id": "local_roast", "label": "Roasted locally"}
+        ]
+      }
+    },
+    {
+      "id": "message_a",
+      "content": [{"type": "text", "text": "Many cafés now give a discount when you bring your own cup."}]
+    },
+    {
+      "id": "message_b",
+      "content": [{"type": "text", "text": "A disposable cup is used for about 15 minutes and can take decades to break down."}]
+    },
+    {
+      "id": "own_cup",
+      "export_name": "Q8",
+      "content": [
+        {
+          "type": "text",
+          "text": {
+            "parts": [
+              {"text": "You said you drink "},
+              {"ref": {"scope": "answer", "question": "cups", "field": "number_entry"}},
+              {"text": " cups a day. How likely are you to bring your own cup next time?"}
+            ]
+          }
+        }
+      ],
+      "response": {
+        "type": "choice",
+        "mode": "single",
+        "options": [
+          {"id": "1", "label": "Very unlikely"},
+          {"id": "2", "label": "Unlikely"},
+          {"id": "3", "label": "Likely"},
+          {"id": "4", "label": "Very likely"}
+        ]
+      },
+      "presentation": {"control": "horizontal"}
+    },
+    {
+      "id": "price_fair",
+      "export_name": "Q9",
+      "content": [
+        {"type": "text", "text": "Here are the prices at one café:"},
+        {
+          "type": "table",
+          "corner": "Drink",
+          "columns": [{"id": "small", "label": "Small"}, {"id": "large", "label": "Large"}],
+          "rows": [
+            {"id": "drip", "label": "Drip coffee", "cells": {"small": "$2.25", "large": "$2.95"}},
+            {"id": "latte", "label": "Latte", "cells": {"small": "$4.10", "large": "$4.85"}}
+          ]
+        },
+        {"type": "text", "text": "Are these prices fair?"}
+      ],
+      "response": {
+        "type": "choice",
+        "mode": "single",
+        "options": [{"id": "low", "label": "Too low"}, {"id": "fair", "label": "About right"}, {"id": "high", "label": "Too high"}]
+      }
+    },
+    {
+      "id": "rate_drink",
+      "export_name": "Q10",
+      "content": [
+        {
+          "type": "text",
+          "text": {
+            "parts": [
+              {"text": "How much do you like "},
+              {"ref": {"scope": "loop", "field": "drink"}},
+              {"text": "?"}
+            ]
+          }
+        }
+      ],
+      "response": {"type": "number", "min": 0, "max": 10, "step": 1, "decimals": 0},
+      "presentation": {"control": "slider"}
+    },
+    {
+      "id": "goodbye_non_drinker",
+      "content": [{"type": "text", "text": "Thank you. The rest of the survey is about coffee drinkers, so you are done."}]
+    }
+  ],
+  "blocks": [
+    {"id": "screen", "kind": "survey", "title": "Screening", "questions": ["intro", "drinks_coffee"]},
+    {"id": "habits", "kind": "survey", "title": "Habits", "questions": ["cups", "where", "chain_name", "importance", "budget", "rank_features"]},
+    {"id": "message_a_block", "kind": "survey", "questions": ["message_a"]},
+    {"id": "message_b_block", "kind": "survey", "questions": ["message_b"]},
+    {"id": "reaction", "kind": "survey", "title": "Reaction", "questions": ["own_cup", "price_fair"]},
+    {
+      "id": "drinks",
+      "kind": "survey",
+      "title": "Drinks",
+      "questions": ["rate_drink"],
+      "repeat": {
+        "rows": [
+          {"id": "1", "values": {"drink": "an espresso"}},
+          {"id": "2", "values": {"drink": "a cappuccino"}},
+          {"id": "3", "values": {"drink": "a cold brew"}}
+        ],
+        "order": "shuffle"
+      }
+    },
+    {"id": "goodbye", "kind": "survey", "questions": ["goodbye_non_drinker"]}
+  ],
+  "flow": [
+    {"type": "show_block", "block": "screen"},
+    {
+      "id": "drinkers",
+      "type": "branch",
+      "when": {"op": "selected", "question": "drinks_coffee", "option": "yes"},
+      "then": [
+        {"type": "show_block", "block": "habits"},
+        {
+          "id": "message",
+          "type": "randomize",
+          "take": 1,
+          "evenly": true,
+          "children": [
+            {
+              "id": "arm_a",
+              "type": "group",
+              "children": [
+                {"id": "set_a", "type": "set_variables", "assignments": [{"variable": "arm", "value": "discount"}]},
+                {"type": "show_block", "block": "message_a_block"}
+              ]
+            },
+            {
+              "id": "arm_b",
+              "type": "group",
+              "children": [
+                {"id": "set_b", "type": "set_variables", "assignments": [{"variable": "arm", "value": "waste"}]},
+                {"type": "show_block", "block": "message_b_block"}
+              ]
+            }
+          ]
+        },
+        {"type": "show_block", "block": "reaction"},
+        {"type": "show_block", "block": "drinks"}
+      ],
+      "else": [
+        {"type": "show_block", "block": "goodbye"},
+        {"id": "end_non_drinkers", "type": "end"}
+      ]
+    }
+  ]
+}

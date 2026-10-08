@@ -1,0 +1,272 @@
+{
+ "@context": {
+  "@vocab": "https://schema.org/",
+  "sc": "https://schema.org/",
+  "cr": "http://mlcommons.org/croissant/",
+  "ct": "https://exploratwin.org/ns/croissant-twins/",
+  "rai": "http://mlcommons.org/croissant/RAI/",
+  "dct": "http://purl.org/dc/terms/",
+  "conformsTo": "dct:conformsTo",
+  "recordSet": "cr:recordSet",
+  "field": "cr:field",
+  "key": "cr:key",
+  "dataType": {
+   "@id": "cr:dataType",
+   "@type": "@vocab"
+  },
+  "source": "cr:source",
+  "fileObject": "cr:fileObject",
+  "extract": "cr:extract",
+  "jsonPath": "cr:jsonPath",
+  "references": "cr:references",
+  "equivalentProperty": "cr:equivalentProperty"
+ },
+ "@type": "sc:Dataset",
+ "conformsTo": [
+  "http://mlcommons.org/croissant/1.1",
+  "https://exploratwin.org/spec/croissant-twins/0.1"
+ ],
+ "name": "Example Bank",
+ "version": "1.0.0",
+ "description": "Eight invented personas for trying the surveytwin library. They are not real people and not a sample of any population.",
+ "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+ "url": "https://example.org/surveytwin-example-bank",
+ "ct:personaBasis": "ct:SyntheticPersona",
+ "conditionsOfAccess": "public",
+ "ct:domain": "general",
+ "ct:region": "United States",
+ "ct:targetPopulation": "None: invented examples for software demonstrations.",
+ "rai:dataCollection": "Written by hand for the library's documentation.",
+ "distribution": [
+  {
+   "@id": "personas.jsonl",
+   "@type": "cr:FileObject",
+   "contentUrl": "personas.jsonl",
+   "encodingFormat": "application/x-ndjson"
+  },
+  {
+   "@id": "representations.jsonl",
+   "@type": "cr:FileObject",
+   "contentUrl": "representations.jsonl",
+   "encodingFormat": "application/x-ndjson"
+  }
+ ],
+ "recordSet": [
+  {
+   "@id": "personas",
+   "@type": "cr:RecordSet",
+   "dataType": "ct:Persona",
+   "key": {
+    "@id": "personas/persona_id"
+   },
+   "field": [
+    {
+     "@id": "personas/persona_id",
+     "@type": "cr:Field",
+     "name": "persona_id",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "personas.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.persona_id"
+      }
+     },
+     "equivalentProperty": "ct:personaId"
+    },
+    {
+     "@id": "personas/age",
+     "@type": "cr:Field",
+     "name": "age",
+     "dataType": "sc:Integer",
+     "source": {
+      "fileObject": {
+       "@id": "personas.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.age"
+      }
+     },
+     "equivalentProperty": "ct:age",
+     "ct:filterable": true
+    },
+    {
+     "@id": "personas/region",
+     "@type": "cr:Field",
+     "name": "region",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "personas.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.region"
+      }
+     },
+     "equivalentProperty": "ct:geographicRegion",
+     "ct:filterable": true,
+     "ct:values": [
+      "Northeast",
+      "Midwest",
+      "South",
+      "West"
+     ]
+    },
+    {
+     "@id": "personas/education",
+     "@type": "cr:Field",
+     "name": "education",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "personas.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.education"
+      }
+     },
+     "ct:filterable": true,
+     "ct:values": [
+      {
+       "code": "hs",
+       "label": "High school"
+      },
+      {
+       "code": "some_college",
+       "label": "Some college"
+      },
+      {
+       "code": "ba",
+       "label": "Bachelor's degree"
+      },
+      {
+       "code": "grad",
+       "label": "Graduate degree"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "@id": "representations",
+   "@type": "cr:RecordSet",
+   "dataType": [
+    "ct:Representation",
+    "sc:CreativeWork"
+   ],
+   "key": {
+    "@id": "representations/representation_id"
+   },
+   "field": [
+    {
+     "@id": "representations/representation_id",
+     "@type": "cr:Field",
+     "name": "representation_id",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "representations.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.representation_id"
+      }
+     },
+     "equivalentProperty": "ct:representationId"
+    },
+    {
+     "@id": "representations/persona_id",
+     "@type": "cr:Field",
+     "name": "persona_id",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "representations.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.persona_id"
+      }
+     },
+     "equivalentProperty": "ct:persona",
+     "references": {
+      "field": {
+       "@id": "personas/persona_id"
+      }
+     }
+    },
+    {
+     "@id": "representations/representation_kind",
+     "@type": "cr:Field",
+     "name": "representation_kind",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "representations.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.representation_kind"
+      }
+     },
+     "equivalentProperty": "ct:representationKind",
+     "ct:values": [
+      {
+       "code": "summary",
+       "label": "Summary",
+       "description": "A short paragraph about the person: work, household, habits and views."
+      },
+      {
+       "code": "demographics",
+       "label": "Demographics",
+       "description": "Age, region and education only."
+      }
+     ]
+    },
+    {
+     "@id": "representations/text",
+     "@type": "cr:Field",
+     "name": "text",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "representations.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.text"
+      }
+     },
+     "equivalentProperty": "sc:text"
+    },
+    {
+     "@id": "representations/media_type",
+     "@type": "cr:Field",
+     "name": "media_type",
+     "dataType": "sc:Text",
+     "source": {
+      "fileObject": {
+       "@id": "representations.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.media_type"
+      }
+     },
+     "equivalentProperty": "sc:encodingFormat"
+    },
+    {
+     "@id": "representations/is_default",
+     "@type": "cr:Field",
+     "name": "is_default",
+     "dataType": "sc:Boolean",
+     "source": {
+      "fileObject": {
+       "@id": "representations.jsonl"
+      },
+      "extract": {
+       "jsonPath": "$.is_default"
+      }
+     },
+     "equivalentProperty": "ct:isDefaultRepresentation"
+    }
+   ]
+  }
+ ]
+}

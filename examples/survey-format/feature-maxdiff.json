@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "id": "feature_maxdiff",
+  "title": "What matters when you shop online",
+  "description": "A generated MaxDiff: each twin gets 6 tasks of 4 features, balanced so that every feature appears equally often (within one), and picks the most and least important of each.",
+  "blocks": [
+    {
+      "id": "features",
+      "kind": "maxdiff",
+      "title": "Feature importance",
+      "items": [
+        {"id": "price", "label": "Low price"},
+        {"id": "quality", "label": "High quality"},
+        {"id": "delivery", "label": "Fast delivery"},
+        {"id": "support", "label": "Helpful customer support"},
+        {"id": "returns", "label": "Easy returns"},
+        {"id": "sustainability", "label": "Sustainable materials"},
+        {"id": "availability", "label": "Reliable availability"},
+        {"id": "selection", "label": "Wide selection"}
+      ],
+      "design": {"mode": "generated", "generator": "balanced_subsets", "tasks_per_participant": 6, "items_per_task": 4, "duplicate_tasks": "forbid"},
+      "presentation": {
+        "instruction": "When you shop online, which of these features is the most important to you, and which is the least important?",
+        "item_order": {"mode": "shuffle", "scope": "task"}
+      },
+      "response": {"type": "best_worst", "required": true, "best_label": "Most important", "worst_label": "Least important"}
+    }
+  ],
+  "flow": [{"type": "show_block", "block": "features"}]
+}

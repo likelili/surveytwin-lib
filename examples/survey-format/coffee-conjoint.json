@@ -1,0 +1,73 @@
+{
+  "schema_version": "0.1",
+  "id": "coffee_conjoint",
+  "title": "Choosing a coffee shop",
+  "description": "A generated conjoint: each twin gets 6 tasks of three brand-specific offers, drawn from the levels below and the rules about which prices go with which brand.",
+  "questions": [
+    {
+      "id": "intro",
+      "content": [{"type": "text", "text": "On the next screens you will see three coffee shops at a time. Each time, pick the one you would go to, or none of them."}]
+    },
+    {
+      "id": "visits",
+      "export_name": "visits",
+      "content": [{"type": "text", "text": "How many times a week do you buy coffee away from home?"}],
+      "response": {"type": "number", "min": 0, "max": 21, "step": 1, "decimals": 0}
+    }
+  ],
+  "blocks": [
+    {"id": "start", "kind": "survey", "questions": ["intro", "visits"]},
+    {
+      "id": "coffee",
+      "kind": "conjoint",
+      "title": "Coffee shop choices",
+      "attributes": [
+        {"id": "brand", "name": "Brand", "levels": [{"id": "mcd", "label": "McDonald's"}, {"id": "dunkin", "label": "Dunkin"}, {"id": "starbucks", "label": "Starbucks"}]},
+        {"id": "seating", "name": "Seating", "levels": [{"id": "seats", "label": "Seating only"}, {"id": "none", "label": "No seating"}, {"id": "wifi", "label": "Seating and Wi-Fi"}]},
+        {"id": "promotion", "name": "Promotion", "levels": [{"id": "discount", "label": "20% off"}, {"id": "upgrade", "label": "Free size upgrade"}, {"id": "none", "label": "No promotion"}]},
+        {
+          "id": "price",
+          "name": "Price of a medium latte",
+          "type": "price",
+          "currency": "USD",
+          "levels": [
+            {"id": "p300", "label": "3.00 dollars", "value": "3.00"},
+            {"id": "p450", "label": "4.50 dollars", "value": "4.50"},
+            {"id": "p600", "label": "6.00 dollars", "value": "6.00"}
+          ]
+        }
+      ],
+      "alternatives": {
+        "mode": "fixed",
+        "items": [
+          {"id": "mcd", "label": "McDonald's", "fixed_levels": {"brand": "mcd"}},
+          {"id": "dunkin", "label": "Dunkin", "fixed_levels": {"brand": "dunkin"}},
+          {"id": "starbucks", "label": "Starbucks", "fixed_levels": {"brand": "starbucks"}}
+        ]
+      },
+      "constraints": {
+        "applicability": [
+          {
+            "row_attribute": "price",
+            "row_levels": ["p300", "p450", "p600"],
+            "column_attribute": "brand",
+            "column_levels": ["mcd", "dunkin", "starbucks"],
+            "allowed": [[1, 1, 0], [1, 1, 1], [0, 0, 1]]
+          }
+        ],
+        "forbidden_profiles": [{"brand": "starbucks", "seating": "none", "promotion": "upgrade"}]
+      },
+      "design": {"mode": "generated", "generator": "random_valid_profiles", "tasks_per_participant": 6, "duplicates": "within_task"},
+      "presentation": {
+        "instruction": "Which of these coffee shops would you go to?",
+        "attribute_order": {"mode": "shuffle", "scope": "participant", "fixed_positions": {"brand": 1}},
+        "alternative_order": {"mode": "shuffle", "scope": "task"}
+      },
+      "response": {"type": "choice", "required": true, "outside_option": {"id": "none", "label": "None of these", "code": 0}}
+    }
+  ],
+  "flow": [
+    {"type": "show_block", "block": "start"},
+    {"type": "show_block", "block": "coffee"}
+  ]
+}

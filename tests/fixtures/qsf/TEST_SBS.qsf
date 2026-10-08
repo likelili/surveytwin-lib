@@ -1,0 +1,515 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_TEST_SBS",
+    "SurveyName": "TEST SBS",
+    "SurveyDescription": null,
+    "SurveyLanguage": "EN"
+  },
+  "SurveyElements": [
+    {
+      "SurveyID": "SV_TEST_SBS",
+      "Element": "BL",
+      "PrimaryAttribute": "Survey Blocks",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "1": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "SBS Block",
+          "ID": "BL_TEST_SBS",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID43"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID44"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_TEST_SBS",
+      "Element": "FL",
+      "PrimaryAttribute": "Survey Flow",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Flow": [
+          {
+            "ID": "BL_TEST_SBS",
+            "Type": "Standard",
+            "FlowID": "FL_3"
+          }
+        ],
+        "Properties": {
+          "Count": 2
+        },
+        "FlowID": "FL_1",
+        "Type": "Root"
+      }
+    },
+    {
+      "SurveyID": "SV_TEST_SBS",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID43",
+      "SecondaryAttribute": "SBS 2 column (defaults - cats: have whiskers str dis, bark somewhat dis - dogs have whikers somew...",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "SBS 2 column (defaults - cats: have whiskers str dis, bark somewhat dis&nbsp; - dogs have whikers somewhat dis, meow str disagree)",
+        "DefaultChoices": [],
+        "DataExportTag": "Q42",
+        "QuestionType": "SBS",
+        "Selector": "SBSMatrix",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "RepeatHeaders": "none",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          }
+        },
+        "QuestionDescription": "SBS 2 column (defaults - cats: have whiskers str dis, bark somewhat dis - dogs have whikers somew...",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Somewhat disagree"
+          },
+          "3": {
+            "Display": "Neither agree nor disagree"
+          },
+          "4": {
+            "Display": "Somewhat agree"
+          },
+          "5": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 6,
+        "NextAnswerId": 3,
+        "NumberOfQuestions": 2,
+        "AdditionalQuestions": {
+          "1": {
+            "Answers": {
+              "1": {
+                "Display": "Have whiskers"
+              },
+              "2": {
+                "Display": "Bark"
+              }
+            },
+            "QuestionText": "Cats",
+            "RecodeValues": [],
+            "VariableNaming": [],
+            "AnalyzeChoices": [],
+            "DefaultChoices": {
+              "1": {
+                "1": {
+                  "Selected": true
+                }
+              },
+              "2": {
+                "2": {
+                  "Selected": true
+                }
+              }
+            },
+            "QuestionType": "Matrix",
+            "Selector": "Likert",
+            "SubSelector": "SingleAnswer",
+            "ChoiceColumnWidthPixels": null,
+            "DataExportTag": "Q42#1",
+            "QuestionID": "QID43#1",
+            "Choices": {
+              "1": {
+                "Display": "Strongly disagree"
+              },
+              "2": {
+                "Display": "Somewhat disagree"
+              },
+              "3": {
+                "Display": "Neither agree nor disagree"
+              },
+              "4": {
+                "Display": "Somewhat agree"
+              },
+              "5": {
+                "Display": "Strongly agree"
+              }
+            },
+            "ChoiceDataExportTags": false,
+            "Validation": {
+              "Settings": {
+                "ForceResponse": "ON"
+              }
+            },
+            "QuestionDescription": "Cats",
+            "Configuration": {
+              "QuestionDescriptionOption": "UseText"
+            }
+          },
+          "2": {
+            "Answers": {
+              "1": {
+                "Display": "Have Whiskers"
+              },
+              "2": {
+                "Display": "Meow"
+              }
+            },
+            "QuestionText": "Dogs",
+            "RecodeValues": [],
+            "VariableNaming": [],
+            "AnalyzeChoices": [],
+            "DefaultChoices": {
+              "1": {
+                "2": {
+                  "Selected": true
+                }
+              },
+              "2": {
+                "1": {
+                  "Selected": true
+                }
+              }
+            },
+            "QuestionType": "Matrix",
+            "Selector": "Likert",
+            "SubSelector": "SingleAnswer",
+            "ChoiceColumnWidthPixels": null,
+            "DataExportTag": "Q42#2",
+            "QuestionID": "QID43#2",
+            "Choices": {
+              "1": {
+                "Display": "Strongly disagree"
+              },
+              "2": {
+                "Display": "Somewhat disagree"
+              },
+              "3": {
+                "Display": "Neither agree nor disagree"
+              },
+              "4": {
+                "Display": "Somewhat agree"
+              },
+              "5": {
+                "Display": "Strongly agree"
+              }
+            },
+            "ChoiceDataExportTags": false,
+            "Validation": {
+              "Settings": {
+                "ForceResponse": "ON"
+              }
+            },
+            "QuestionDescription": "Dogs",
+            "Configuration": {
+              "QuestionDescriptionOption": "UseText"
+            }
+          }
+        },
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID43",
+        "Randomization": {
+          "Advanced": null,
+          "Type": "All",
+          "TotalRandSubset": ""
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_TEST_SBS",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID44",
+      "SecondaryAttribute": "SBS 2 column (defaults - cats: have whiskers str dis, bark somewhat dis - dogs have whikers somew...",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "SBS 2 column (defaults - cats: have whiskers str dis, bark somewhat dis&nbsp; - dogs have whikers somewhat dis, meow str disagree)",
+        "DefaultChoices": [],
+        "DataExportTag": "Q43",
+        "QuestionType": "SBS",
+        "Selector": "SBSMatrix",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "Autoscale": {
+            "YScale": {
+              "Name": "agreeDisagree",
+              "Type": "likert",
+              "Reverse": false
+            }
+          },
+          "RepeatHeaders": "none"
+        },
+        "QuestionDescription": "SBS 2 column (defaults - cats: have whiskers str dis, bark somewhat dis - dogs have whikers somew...",
+        "Choices": {
+          "1": {
+            "Display": "Strongly disagree"
+          },
+          "2": {
+            "Display": "Disagree"
+          },
+          "3": {
+            "Display": "Somewhat disagree"
+          },
+          "4": {
+            "Display": "Neither agree nor disagree"
+          },
+          "5": {
+            "Display": "Somewhat agree"
+          },
+          "6": {
+            "Display": "Agree"
+          },
+          "7": {
+            "Display": "Strongly agree"
+          }
+        },
+        "ChoiceOrder": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "Randomization": {
+          "Advanced": null,
+          "Type": "All",
+          "TotalRandSubset": ""
+        },
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 8,
+        "NextAnswerId": 4,
+        "NumberOfQuestions": 3,
+        "AdditionalQuestions": {
+          "1": {
+            "Answers": {
+              "1": {
+                "Display": "Have whiskers"
+              },
+              "2": {
+                "Display": "Bark"
+              }
+            },
+            "QuestionText": "Cats",
+            "RecodeValues": [],
+            "VariableNaming": [],
+            "AnalyzeChoices": [],
+            "DefaultChoices": {
+              "1": {
+                "1": {
+                  "Selected": true
+                }
+              },
+              "2": {
+                "2": {
+                  "Selected": true
+                }
+              }
+            },
+            "QuestionType": "Matrix",
+            "Selector": "Likert",
+            "SubSelector": "SingleAnswer",
+            "ChoiceColumnWidthPixels": null,
+            "DataExportTag": "Q43#1",
+            "QuestionID": "QID44#1",
+            "Choices": {
+              "1": {
+                "Display": "Strongly disagree"
+              },
+              "2": {
+                "Display": "Disagree"
+              },
+              "3": {
+                "Display": "Somewhat disagree"
+              },
+              "4": {
+                "Display": "Neither agree nor disagree"
+              },
+              "5": {
+                "Display": "Somewhat agree"
+              },
+              "6": {
+                "Display": "Agree"
+              },
+              "7": {
+                "Display": "Strongly agree"
+              }
+            },
+            "ChoiceDataExportTags": false,
+            "Validation": {
+              "Settings": {
+                "ForceResponse": "ON"
+              }
+            },
+            "QuestionDescription": "Cats",
+            "Configuration": {
+              "QuestionDescriptionOption": "UseText"
+            }
+          },
+          "2": {
+            "Answers": {
+              "1": {
+                "Display": "Have Whiskers"
+              },
+              "2": {
+                "Display": "Meow"
+              }
+            },
+            "QuestionText": "Dogs",
+            "RecodeValues": [],
+            "VariableNaming": [],
+            "AnalyzeChoices": [],
+            "DefaultChoices": {
+              "1": {
+                "2": {
+                  "Selected": true
+                }
+              },
+              "2": {
+                "1": {
+                  "Selected": true
+                }
+              }
+            },
+            "QuestionType": "Matrix",
+            "Selector": "Likert",
+            "SubSelector": "SingleAnswer",
+            "ChoiceColumnWidthPixels": null,
+            "DataExportTag": "Q43#2",
+            "QuestionID": "QID44#2",
+            "Choices": {
+              "1": {
+                "Display": "Strongly disagree"
+              },
+              "2": {
+                "Display": "Disagree"
+              },
+              "3": {
+                "Display": "Somewhat disagree"
+              },
+              "4": {
+                "Display": "Neither agree nor disagree"
+              },
+              "5": {
+                "Display": "Somewhat agree"
+              },
+              "6": {
+                "Display": "Agree"
+              },
+              "7": {
+                "Display": "Strongly agree"
+              }
+            },
+            "ChoiceDataExportTags": false,
+            "Validation": {
+              "Settings": {
+                "ForceResponse": "ON"
+              }
+            },
+            "QuestionDescription": "Dogs",
+            "Configuration": {
+              "QuestionDescriptionOption": "UseText"
+            }
+          },
+          "3": {
+            "Answers": {
+              "1": {
+                "Display": "Have Whiskers"
+              },
+              "2": {
+                "Display": "Meow"
+              }
+            },
+            "QuestionText": "Hamsters",
+            "RecodeValues": [],
+            "VariableNaming": [],
+            "AnalyzeChoices": [],
+            "QuestionType": "Matrix",
+            "Selector": "Likert",
+            "SubSelector": "SingleAnswer",
+            "ChoiceColumnWidthPixels": null,
+            "DataExportTag": "Q43#3",
+            "QuestionID": "QID44#3",
+            "Choices": {
+              "1": {
+                "Display": "Strongly disagree"
+              },
+              "2": {
+                "Display": "Disagree"
+              },
+              "3": {
+                "Display": "Somewhat disagree"
+              },
+              "4": {
+                "Display": "Neither agree nor disagree"
+              },
+              "5": {
+                "Display": "Somewhat agree"
+              },
+              "6": {
+                "Display": "Agree"
+              },
+              "7": {
+                "Display": "Strongly agree"
+              }
+            },
+            "ChoiceDataExportTags": false,
+            "Validation": {
+              "Settings": {
+                "ForceResponse": "ON"
+              }
+            },
+            "QuestionDescription": "Hamsters",
+            "Configuration": {
+              "QuestionDescriptionOption": "UseText"
+            }
+          }
+        },
+        "ChoiceDataExportTags": false,
+        "QuestionID": "QID44"
+      }
+    }
+  ]
+}
