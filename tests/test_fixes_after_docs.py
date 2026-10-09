@@ -373,7 +373,7 @@ def test_the_user_documents_and_messages_name_no_website_or_internal_notes():
 
     root = Path(__file__).resolve().parents[1]
     pattern = re.compile(r"website(?!_policy)|open question|pr #\d", re.IGNORECASE)
-    documents = [root / "README.md", root / "docs" / "builder.md", *sorted((root / "docs" / "reference").glob("*.md"))]
+    documents = [root / "README.md", root / "questions-guide.md", root / "docs" / "builder.md", *sorted((root / "docs" / "reference").glob("*.md"))]
     found = [f"{d.name}: {m.group(0)}" for d in documents for m in pattern.finditer(d.read_text(encoding="utf-8"))]
     table = json.loads((root / "src" / "surveytwin" / "data" / "support_table.json").read_text(encoding="utf-8"))
     found += [f"support_table source: {m.group(0)}" for m in pattern.finditer(table["source"])]

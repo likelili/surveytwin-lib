@@ -1,87 +1,62 @@
-"""The README's printed output is what the code prints (lines of "..." mark cuts)."""
+"""The README and the question guide run as written: every Python block, in order,
+in a scratch folder holding a copy of examples/, with a scripted model standing in
+for the provider (no call leaves the machine). The facts the README states about
+the examples are checked too."""
 
 from __future__ import annotations
 
-import contextlib
-import io
+import asyncio
+import base64
+import json
+import re
+import shutil
 from pathlib import Path
 
 import surveytwin as st
+from fakes import answer_questions
 
 ROOT = Path(__file__).resolve().parent.parent
+PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAE0lEQVR4nGM8ISfHAANMcBY6BwAm2gEKUjNC5gAAAABJRU5ErkJggg==")
 
 
-def _output_blocks() -> list[list[str]]:
-    blocks, current, language = [], None, ""
-    for line in (ROOT / "README.md").read_text(encoding="utf-8").splitlines():
-        if line.startswith("```"):
-            if current is None:
-                current, language = [], line[3:].strip()
-            else:
-                if language == "":
-                    blocks.append(current)
-                current = None
-            continue
-        if current is not None:
-            current.append(line)
-    return blocks
+def python_blocks(page: str) -> list[str]:
+    return re.findall(r"```python\n(.*?)```", (ROOT / page).read_text(encoding="utf-8"), re.S)
 
 
-def _readme_steps(monkeypatch) -> set[str]:
-    monkeypatch.chdir(ROOT)
-    out = io.StringIO()
-    with contextlib.redirect_stdout(out):
-        survey = st.read_qsf("examples/example_survey.qsf")
-        print(survey)
-        print(survey.check())
-        print(survey.preview_blocks())
-        trimmed = survey.drop_blocks(["BL_KS_MC_1"])
-        print(trimmed.drop_report)
-        bank = st.bank("examples/example-bank")
-        print(bank)
-        print(bank.representations())
-        print(bank.filter_options())
-        print(bank.preview_filter({"region": ["South", "West"], "age": {"max": 50}}, sample_size=3))
-        config = st.configure(
-            bank="examples/example-bank",
-            filters={"region": ["South", "West"], "age": {"max": 50}},
-            sample_size=3,
-            seed=7,
-            model="gpt-5.6-luna-medium",
-        )
-        print(config)
-        plan = st.plan(trimmed, config)
-        print(plan)
-        for twin in plan.twins:
-            print(twin)
-        print(plan.preview_prompt("ex-03"))
-        # the standard survey format section
-        survey = st.read_survey("examples/survey-format/coffee-habits.json")
-        print(survey, survey.kind)
-        survey = st.read_survey("examples/survey-format/coffee-conjoint.json")
-        print(survey, survey.questions["coffee_t1"].type)
-        # building a survey in Python
-        survey = st.new_survey("Coffee habits")
-        survey = survey.add_question("single_choice", "Do you drink coffee?", options=["Yes", "No"], id="drinks", required=True)
-        survey = survey.add_question("number", "How many cups on a typical day?", id="cups", min=0, max=12,
-                                     show_if={"op": "selected", "question": "drinks", "option": "1"})
-        survey = survey.add_question("grid", "How important is each when you buy coffee?", id="importance",
-                                     rows=["Price", "Taste"], scale="agreement_5")
-        survey = survey.group_into_block(["cups", "importance"], "habits", title="Habits")
-        print(survey)
-        print(survey.standard["flow"])
-    return set(out.getvalue().splitlines())
+def stand_in(request: st.ModelRequest) -> st.Reply:
+    answers = answer_questions(request.user)
+    ranks: dict[str, int] = {}
+    shown = request.user.split("Questions JSON:\n")[-1].split("\n\nRespond using JSON schema")[0]
+    groups = {q["id"]: q.get("rank_order_group_id") for q in json.loads(shown)}
+    for answer in answers:  # a ranking's items get 1, 2, 3, ...
+        group = groups.get(answer["question_id"])
+        if group:
+            ranks[group] = ranks.get(group, 0) + 1
+            answer["answer_value"] = answer["answer_label"] = answer["answer_raw"] = str(ranks[group])
+    return st.Reply(text=json.dumps({"answers": answers}), input_tokens=10, output_tokens=10)
 
 
-def test_readme_output_is_real(monkeypatch):
-    real = _readme_steps(monkeypatch)
-    diagram = ("read_survey(", "read_qsf(", "bank(", "configure(", "plan(", "run(")
-    blocks = _output_blocks()
-    assert len(blocks) >= 9
-    invented = [
-        line
-        for block in blocks
-        for line in block
-        if line.strip() not in ("", "...") and not line.startswith(diagram) and line not in real
-    ]
-    assert invented == []
+def test_the_readme_and_the_question_guide_run(tmp_path, monkeypatch):
+    shutil.copytree(ROOT / "examples", tmp_path / "examples")
+    (tmp_path / "images").mkdir()
+    (tmp_path / "images" / "ad.png").write_bytes(PNG)  # the picture the guide's example names
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(st.Model, "openai", classmethod(lambda cls, name, **kwargs: st.Model.from_function(stand_in, name=name, images=True)))
+    namespace: dict = {"asyncio": asyncio}
+    for page in ("README.md", "questions-guide.md"):
+        blocks = python_blocks(page)
+        assert blocks, page
+        for number, block in enumerate(blocks, start=1):
+            # an example for async code runs in an event loop of its own here
+            code = re.sub(r"await (st\.arun\(.*\))", r"asyncio.run(\1)", block)
+            exec(compile(code, f"{page} block {number}", "exec"), namespace)
+        if page == "README.md":
+            # what the README says about the examples
+            assert str(namespace["survey"]) == "Survey('Coffee habits', 14 questions, 7 blocks)"
+            assert namespace["bank"].size == 8  # "eight invented personas"
+            assert namespace["bank"].preview_filter(namespace["filters"]).matching == 3  # "Three example personas match"
+            assert len(namespace["pilot_plan"].twins) == 1
+            assert st.Results.load("runs/coffee-habits").answers == namespace["results"].answers
+            assert namespace["built"].standard["blocks"][0]["questions"] == ["drink", "cups", "reason"]
+    assert (tmp_path / "study.json").exists()  # the guide's last example writes the definition
+    assert st.read_survey(tmp_path / "study.json").standard == namespace["survey"].standard
