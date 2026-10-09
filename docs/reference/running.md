@@ -310,7 +310,7 @@ question, the answer is left blank in the data and flagged with a status
 | Status | Meaning |
 |---|---|
 | `skipped` | The twin was asked the question but gave nothing usable: the reply left it out, left a required text box empty, or every attempt of the call failed. |
-| `out_of_range` | The twin answered, but the answer matches none of the options, or a number question got text with no number in it. The words it gave are kept in `Answer.raw`; `value` and `label` stay blank. |
+| `out_of_range` | The twin answered, but the answer matches none of the options; or a number question got text with no number in it, or a number the question does not allow (outside its range, off its step, or with more decimal places than it allows). The words it gave are kept in `Answer.raw`; `value` and `label` stay blank. Nothing is moved to a nearby allowed answer: repairs happen after the run (`rerun_flagged`). |
 
 Older data may hold `needs_validation`; `Answer.status` reports it as `skipped`.
 
@@ -319,8 +319,8 @@ Some answers look odd but are not flagged:
 - An explicit refusal, such as "Prefer not to say", to an optional question is
   kept as a blank answer, as when a respondent leaves a question unanswered. An
   option with that text is matched first.
-- A number outside a question's range is moved to the nearest end of the range,
-  and to the nearest step.
+- A number the question allows is written in the question's format: 7.0 for a
+  whole-number question is 7.
 - Fewer choices than a question's minimum are kept as given; `results.warnings`
   says so, and the answer's `adjustments` record it.
 - A multi-select option the twin did not pick is blank: it means "not selected".

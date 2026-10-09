@@ -2357,25 +2357,41 @@ def _coerce_numeric(answer: dict[str, Any], question: dict[str, Any]) -> dict[st
             max_value = float(str(question.get("numeric_max", "")).strip())
         except (TypeError, ValueError):
             max_value = None
-        if min_value is not None:
-            numeric_value = max(numeric_value, min_value)
-        if max_value is not None:
-            numeric_value = min(numeric_value, max_value)
         step = _numeric_metadata_value(question.get("numeric_step"))
-        if step is not None and step > 0:
-            base_value = min_value if min_value is not None else 0.0
-            numeric_value = base_value + round((numeric_value - base_value) / step) * step
-            if min_value is not None:
-                numeric_value = max(numeric_value, min_value)
-            if max_value is not None:
-                numeric_value = min(numeric_value, max_value)
         decimals = _numeric_metadata_int(question.get("numeric_decimals"))
+        if _numeric_problem(numeric_value, min_value, max_value, step, decimals):
+            # A number the question does not allow is never moved to the nearest
+            # allowed one (99.6 on a 0-10 scale is not a 10): it is recorded as the
+            # model gave it and flagged, for the report and a rerun after the run.
+            answer["answer_value"] = ""
+            answer["answer_label"] = ""
+            answer["answer_raw"] = next((str(c).strip() for c in raw_candidates if str(c).strip()), value)
+            answer["answer_status"] = ANSWER_STATUS_OUT_OF_RANGE
+            return answer
         value = _format_numeric_value(numeric_value, decimals)
 
     answer["answer_value"] = value
     answer["answer_label"] = value
     answer["answer_raw"] = value
     return answer
+
+
+def _numeric_problem(value: float, low: float | None, high: float | None, step: float | None, decimals: int | None) -> str:
+    """Why a number does not fit a numeric question ("" when it fits): below the
+    lowest value, above the highest, off the step from the lowest value (or 0), or
+    with more decimal places than allowed."""
+    tolerance = 1e-9
+    if low is not None and value < low - tolerance:
+        return "below the lowest value"
+    if high is not None and value > high + tolerance:
+        return "above the highest value"
+    if step is not None and step > 0:
+        steps = (value - (low if low is not None else 0.0)) / step
+        if abs(steps - round(steps)) > 1e-6:
+            return "not on the step"
+    if decimals is not None and decimals >= 0 and abs(round(value, decimals) - value) > tolerance:
+        return "too many decimal places"
+    return ""
 
 
 def _parse_numeric_answer_value(answer: dict[str, Any]) -> float:
