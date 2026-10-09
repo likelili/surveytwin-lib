@@ -615,6 +615,7 @@ class Survey:
         authoring: dict[str, dict[str, Any]] | None = None,
         edits: list[dict[str, Any]] | None = None,
         standard: dict[str, Any] | None = None,
+        pictures: dict[str, str] | None = None,
     ) -> None:
         if template is None and kind == "standard" and isinstance(standard, dict):
             pass  # written in the standard format: its template is made when a view needs it
@@ -641,6 +642,9 @@ class Survey:
         # The survey in the standard format, as read (a written survey, or a QSF
         # read into that format). For a written survey it is the survey itself.
         self._standard = standard
+        # The picture files a written survey names, read when it was read:
+        # {path as written: data address}. A run sends these (spec/pictures.py).
+        self._pictures = dict(pictures or {})
         # Warnings from the builder edit that made this survey (a policy's
         # demographic warning, ...); not part of its definition.
         self.edit_warnings: list[Any] = []
@@ -662,6 +666,7 @@ class Survey:
             "authoring": self._authoring,
             "edits": self.edits,
             "standard": self._standard,
+            "pictures": self._pictures,
         }
         fields.update(changes)
         template = fields.pop("template")
@@ -676,6 +681,18 @@ class Survey:
         from .spec.compile import compile_survey
 
         return compile_survey(self._standard)
+
+    def _with_pictures(self, definition: dict[str, Any]) -> dict[str, Any]:
+        """``definition`` with each picture file it names replaced by the picture,
+        as a run sends it (a copy when there are files; the same object otherwise)."""
+        from .spec.pictures import with_pictures
+
+        return with_pictures(definition, self._pictures)
+
+    def _runnable_standard(self) -> dict[str, Any]:
+        """The survey in the standard format as it runs (``standard``), its picture
+        files read into the definition."""
+        return self._with_pictures(self.standard)
 
     @property
     def _written(self) -> bool:
@@ -706,6 +723,7 @@ class Survey:
             "authoring": copy.deepcopy(self._authoring),
             "unresolved_media": [dict(m) for m in self._unresolved_media],
             "edits": [dict(e) for e in self.edits],
+            **({"pictures": dict(self._pictures)} if self._pictures else {}),
             "qsf_base64": base64.b64encode(self._raw_bytes).decode("ascii") if self._raw_bytes and self.kind != "standard" else "",
             **(
                 {
@@ -745,6 +763,7 @@ class Survey:
             authoring=data.get("authoring"),
             edits=data.get("edits"),
             standard=data.get("standard"),
+            pictures=data.get("pictures"),
         )
         expected = str(data.get("checksum_sha256") or "")
         if expected and survey.checksum != expected:
@@ -766,8 +785,14 @@ class Survey:
             "unresolved_media": self._unresolved_media,
             "edits": self.edits,
         }
+        if self._pictures:
+            definition["pictures"] = self._picture_digests()
         canonical = json.dumps(definition, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    def _picture_digests(self) -> dict[str, str]:
+        """SHA-256 of each picture file as read, by its path as written."""
+        return {source: hashlib.sha256(uri.encode("utf-8")).hexdigest() for source, uri in sorted(self._pictures.items())}
 
     # -- identity ---------------------------------------------------------------
 
@@ -796,11 +821,17 @@ class Survey:
 
     @cached_property
     def checksum(self) -> str:
-        """SHA-256 of the QSF file as read; for a built or edited survey, of its template."""
+        """SHA-256 of the QSF file as read; for a built or edited survey, of its
+        template. A survey that names picture files also covers the pictures as read."""
         if self.kind in {"qsf", "standard"} and not self.edits and self._raw_bytes:
-            return hashlib.sha256(self._raw_bytes).hexdigest()
-        canonical = json.dumps(self._base_template, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+            digest = hashlib.sha256(self._raw_bytes).hexdigest()
+        else:
+            canonical = json.dumps(self._base_template, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+            digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        if not self._pictures:
+            return digest
+        both = json.dumps({"survey": digest, "pictures": self._picture_digests()}, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(both.encode("utf-8")).hexdigest()
 
     @property
     def source(self) -> dict[str, Any]:
@@ -1096,7 +1127,7 @@ class Survey:
         fields they supply are not reported as blank, and a key nothing reads is."""
         from .engine.analysis import analyze, undrawable_random_tokens
 
-        standard = self.standard
+        standard = self._runnable_standard()
         analysis = analyze(standard)
         traits = analysis.get("traits", {})
         reasons: list[str] = []
@@ -1400,18 +1431,26 @@ def _through_standard_format(template: dict[str, Any], qsf: dict[str, Any]) -> t
     return standard, compiled
 
 
-def read_survey(source: str | Path | bytes | dict[str, Any]) -> Survey:
+def read_survey(source: str | Path | bytes | dict[str, Any], *, folder: str | Path | None = None) -> Survey:
     """Read a survey written in the standard format (JSON) from a path, bytes or a
     parsed value. Reading checks the whole definition first: any error raises
     ``SurveyFormatError``, whose ``findings`` give the path of each field; warnings
     (a variable never set, a block never shown) are kept in ``read_warnings``.
-    The format is described in docs/reference/survey-format.md."""
+    The format is described in docs/reference/survey-format.md.
+
+    A picture's ``source`` may be the path of a picture file: an absolute path is
+    read as written, a relative path from the folder of the JSON file, or from
+    ``folder`` for a survey given as bytes or a parsed value (the current folder
+    when ``folder`` is not given). Each file is read now; a missing file or one
+    that is not a PNG, JPEG, WEBP or GIF picture of at most 20 MB is an error."""
     from .errors import SurveyFormatError
     from .spec.compile import CompileError, compile_survey
+    from .spec.pictures import read_pictures
     from .spec.validate import check_survey
 
     name = ""
     raw: bytes | None = None
+    base = Path(folder).expanduser() if folder is not None else Path.cwd()
     if isinstance(source, dict):
         data = copy.deepcopy(source)
     else:
@@ -1421,6 +1460,8 @@ def read_survey(source: str | Path | bytes | dict[str, Any]) -> Survey:
                 raise SurveyError(f"{path}: no such file")
             raw = path.read_bytes()
             name = path.name
+            if folder is None:
+                base = path.expanduser().resolve().parent
         elif isinstance(source, (bytes, bytearray)):
             raw = bytes(source)
         else:
@@ -1434,6 +1475,9 @@ def read_survey(source: str | Path | bytes | dict[str, Any]) -> Survey:
     findings = check_survey(data)
     if any(f.level == "error" for f in findings):
         raise SurveyFormatError(findings)
+    pictures, picture_problems = read_pictures(data, base.resolve())
+    if picture_problems:
+        raise SurveyFormatError(picture_problems)
     try:
         template = compile_survey(data)
     except CompileError as exc:
@@ -1444,6 +1488,7 @@ def read_survey(source: str | Path | bytes | dict[str, Any]) -> Survey:
         source_name=name,
         raw_bytes=raw if raw is not None else json.dumps(data, ensure_ascii=False, sort_keys=True).encode("utf-8"),
         standard=data,
+        pictures=pictures,
     )
     survey.read_warnings = [f for f in findings if f.level == "warning"]
     if not survey._answerable_count:

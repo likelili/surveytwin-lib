@@ -366,7 +366,7 @@ def plan(survey: Survey, config: RunConfig, *, mode: str = "auto") -> Plan:
         warnings.append(f"Only {len(ids)} twins match the filters and representation; asked for {config.sample_size}.")
     try:
         instrument = build_survey_instrument(
-            survey.standard,
+            survey._runnable_standard(),
             len(ids),
             seed=config.seed,
             mode=mode,

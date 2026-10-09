@@ -138,11 +138,32 @@ response.
 | `type` | Fields | Shown as |
 |---|---|---|
 | `text` | `text` ([text](#text-and-piped-values), required); `format`: `"plain"` (default) or `"html"` | The text. Plain text keeps its line breaks. HTML loses its markup and keeps its lines as a browser shows them: a `<br>` ends a line, a `<div>` or a list item is a line of its own, a paragraph, a list or a table is set apart by a blank line, and the line breaks of the HTML source itself are spaces. A list item starts with "- " (or its number, in a numbered list). Which table cells are headings comes from the markup: a heading row (in `<thead>`, or all `<th>`) with one row of values reads as "Heading: value. Heading: value", and so does a two-column table with `<th>` labels down its first column; a wider table with labels down its first column gives one "Label: values" line per row; two rows with no heading cells stay two rows; any other table is a Markdown table. |
-| `image` | `source` (required: a link, a `data:` address, or a path the caller resolves); `alt`; `title` | The image, sent to the model where it stands among the question's content (see the run's image settings). |
+| `image` | `source` (required: a web link, a `data:` address, or the path of a picture file: absolute, or relative to the folder of the survey's JSON file); `alt`; `title` | The image, sent to the model where it stands among the question's content (see [Pictures](#pictures)). |
 | `table` | `columns` (each `id`, `label`); `rows` (each `id`, `label`, `cells` by column ID); `caption`; `corner` (the label above the row labels) | A table, with every cell under its column, as Markdown. A table is something the question shows; to ask one answer per row, use a [grid](#matrix). |
 
 Several content items are shown in order, separated by a blank line. A question
 whose content is only images reads "[Image stimulus attached]".
+
+### Pictures
+
+A picture's `source`, in image content or in any `media` list (options, rows,
+columns, MaxDiff items, conjoint levels), is one of:
+
+- a web link (`https://...`), which the model's provider fetches;
+- a `data:image/...` address, the picture itself written into the JSON;
+- the path of a picture file on this computer: an absolute path, or a path
+  relative to the folder of the survey's JSON file
+  (`"source": "images/ad_high_price.png"` next to `study.json`). For a survey
+  given to `read_survey` as data rather than a file, `folder=` says where
+  relative paths start.
+
+`read_survey` reads every file when it reads the survey. A missing file, a file
+that is not a PNG, JPEG, WEBP or GIF picture (its type is read from its content),
+or one larger than 20 MB is an error naming the field. The survey keeps each path
+as written; a run sends the picture inside its request, because a model cannot
+open a file on this computer, and a saved run keeps one copy of each picture.
+Where the files live and how they are organized is up to you or your
+application.
 
 ### Text and piped values
 

@@ -99,7 +99,7 @@ def _image_gate(plan: Plan, url_checker: Callable[[str], dict[str, str]] | None)
 def _image_gate_urls(plan: Plan, url_checker: Callable[[str], dict[str, str]] | None) -> tuple[list[str], list[str]]:
     survey = plan.survey
     findings = image_gate_findings(
-        definition=plan.instrument.get("definition") or survey.standard,
+        definition=plan.instrument.get("definition") or survey._runnable_standard(),
         content=survey.raw_bytes,
         url_checker=url_checker,
     )
@@ -287,7 +287,7 @@ def _keep_shown_for_reruns(audits: list[dict[str, Any]], rows: list[dict[str, An
     rest the template gives as they were)."""
     from .answers.rerun import _is_flagged, piped_question_ids
 
-    piped = piped_question_ids(plan.instrument.get("definition") or plan.survey.standard)
+    piped = piped_question_ids(plan.instrument.get("definition") or plan.survey._runnable_standard())
     flagged: dict[str, set[str]] = {}
     for row in rows:
         if _is_flagged(row.get("answer_status", "")):
@@ -411,7 +411,7 @@ def _build_results(
     media: dict[str, str] = {}
     # the survey as asked (without the dropped blocks' questions: a dropped question
     # no longer exists, so no file lists it)
-    definition = _compact_media(plan.instrument.get("definition") or plan.survey.standard, media)
+    definition = _compact_media(plan.instrument.get("definition") or plan.survey._runnable_standard(), media)
     # each static twin's copy: its blocks of shown questions (a staged twin's are in its audit)
     copies = _compact_media([instance.get("blocks") or [] for instance in plan.instrument.get("instances") or []], media)
     provenance["images_left_out"] = [_media_key(u, media) if str(u).startswith("data:image/") else u for u in provenance["images_left_out"]]

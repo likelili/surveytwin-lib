@@ -132,10 +132,15 @@ TextValue = Either(
 
 # ---------------------------------------------------------------- media and content
 
+PICTURE_SOURCE_DOC = (
+    "A web link, a data: address, or the path of a PNG, JPEG, WEBP or GIF file: absolute, "
+    "or relative to the folder of the survey's JSON file."
+)
+
 Media = Obj(
     "Media",
     {
-        "source": F(Str(nonempty=True), True, "A link, a data: address, or a path the caller resolves."),
+        "source": F(Str(nonempty=True), True, PICTURE_SOURCE_DOC),
         "alt": F(Str()),
         "title": F(Str()),
     },
@@ -169,7 +174,7 @@ Content = Tagged(
             "ImageContent",
             {
                 "type": F(Const("image"), True),
-                "source": F(Str(nonempty=True), True),
+                "source": F(Str(nonempty=True), True, PICTURE_SOURCE_DOC),
                 "alt": F(Str()),
                 "title": F(Str()),
             },

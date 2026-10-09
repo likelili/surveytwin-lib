@@ -447,7 +447,8 @@
         },
         "source": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "A web link, a data: address, or the path of a PNG, JPEG, WEBP or GIF file: absolute, or relative to the folder of the survey's JSON file."
         },
         "alt": {
           "type": "string"
@@ -749,7 +750,7 @@
         "source": {
           "type": "string",
           "minLength": 1,
-          "description": "A link, a data: address, or a path the caller resolves."
+          "description": "A web link, a data: address, or the path of a PNG, JPEG, WEBP or GIF file: absolute, or relative to the folder of the survey's JSON file."
         },
         "alt": {
           "type": "string"

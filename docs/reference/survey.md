@@ -93,7 +93,7 @@ survey.check() lists the logic that reads an excluded question.
 ## `read_survey`
 
 ```python
-surveytwin.read_survey(source: str | Path | bytes | dict[str, Any]) -> Survey
+surveytwin.read_survey(source: str | Path | bytes | dict[str, Any], *, folder: str | Path | None = None) -> Survey
 ```
 
 Reads a survey written in [the standard format](survey-format.md). The whole
@@ -101,11 +101,20 @@ definition is checked first, its shape and then its meaning (references,
 limits, unique IDs and labels); nothing runs until it passes. Reading never
 touches the network.
 
+A picture's `source` may be the path of a picture file on this computer. Each
+file is read now: an absolute path as written, a relative path from the folder
+of the JSON file (or from `folder`). The survey keeps the paths as written
+(`survey.standard`); a run sends each picture inside its request, and a saved run
+keeps one copy of each, so it does not need the files again.
+
 **Parameters**
 
 - `source` (`str | Path | bytes | dict[str, Any]`): the survey. Give the path of
   a `.json` file, its bytes, the parsed JSON, or the JSON as text (a string that
   starts with `{`; any other string is a path). The value is never changed.
+- `folder` (`str | Path | None`, default `None`): where a relative picture path
+  starts. `None` means the folder of the JSON file when `source` is a path, and
+  the current folder otherwise.
 
 **Returns** `Survey`: the survey, with `kind` set to `"standard"`. Warnings (a
 variable read but never set, a block the flow never shows) are in
@@ -114,7 +123,8 @@ variable read but never set, a block the flow never shows) are in
 **Raises**
 
 - `SurveyFormatError`: the definition has errors; `findings` lists every one with
-  the path of its field.
+  the path of its field. A picture file that is missing, is not a PNG, JPEG,
+  WEBP or GIF picture, or is larger than 20 MB is one (code `picture.file`).
 - `SurveyError`: the file does not exist or is not JSON, or it is a Qualtrics
   export (read it with `read_qsf`).
 - `DraftError` (`survey.no_answerable`): the survey has no question a twin can

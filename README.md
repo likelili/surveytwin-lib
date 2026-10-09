@@ -114,6 +114,12 @@ print(survey, survey.kind)
 Survey('Coffee habits', 14 questions, 7 blocks) standard
 ```
 
+A picture is named by its `source`: a web link, or the path of a picture file on
+your computer, absolute or relative to the folder of the JSON file
+(`{"type": "image", "source": "images/ad.png"}` next to `study.json`).
+`read_survey` reads each file and stops on one that is missing or not a picture;
+a run sends the picture itself to the model, and a saved run keeps a copy.
+
 Every QSF is read into this format too (`survey.standard`); on all the test and
 study QSFs of the library it runs exactly as the QSF reader ran it before.
 `surveytwin convert study.qsf -o study.json` writes it out, to read, edit and
