@@ -131,3 +131,19 @@ def test_the_reference_has_no_private_material():
     # the decisions log stays with the team, and the library has no prices
     assert "decisions.md" not in ALL_TEXT.lower()
     assert not re.search(r"\$\s?\d", ALL_TEXT)
+
+
+def test_every_relative_link_resolves():
+    # A link to another page of the repository points at a file that exists (a
+    # link from docs/reference/ to the README is ../../README.md, not ../README.md).
+    root = REFERENCE.parents[1]
+    link = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+    broken = []
+    for page in [root / "README.md", *sorted((root / "docs").rglob("*.md"))]:
+        text = re.sub(r"```.*?```", "", page.read_text(encoding="utf-8"), flags=re.S)
+        for target in link.findall(text):
+            if re.match(r"^[a-z]+:", target) or target.startswith("#"):
+                continue  # a web address or a place on the same page
+            if not (page.parent / target.split("#", 1)[0]).exists():
+                broken.append(f"{page.relative_to(root)}: {target}")
+    assert not broken, "links to files that do not exist:\n" + "\n".join(broken)

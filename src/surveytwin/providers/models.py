@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import copy
+import dataclasses
 import inspect
 import json
 import os
@@ -85,19 +86,51 @@ def _unset_env(value: Any) -> list[str]:
 
 
 # Body fields whose value is a secret by its name: never recorded, even when
-# written as plain text (use env("NAME") instead).
-_SECRET_NAME = re.compile(r"(api[_-]?key|apikey|secret|token|password|passwd|authorization|credential)", re.IGNORECASE)
+# written as plain text (use env("NAME") instead). "token" names a secret only
+# at the end of a name, in the singular (token, access_token, authToken): a
+# field counting tokens (max_tokens, maxOutputTokens, budget_tokens) is not one.
+_SECRET_NAME = re.compile(
+    r"(api[_-]?key|apikey|secret|password|passwd|passphrase|credential|authorization|private[_-]?key|access[_-]?key|cookie)",
+    re.IGNORECASE,
+)
+_SECRET_WORD = re.compile(r"(token|^auth)$", re.IGNORECASE)
+_ENV_MARK = re.compile(r"^<env (?P<name>[^<>]+)>$")
+HIDDEN = "<hidden>"
 
 
-def _redact(value: Any, key: str = "") -> Any:
+def _is_secret_name(key: str) -> bool:
+    name = str(key or "").strip()
+    return bool(name) and bool(_SECRET_NAME.search(name) or _SECRET_WORD.search(name))
+
+
+def _redact(value: Any, key: str = "", *, secret: bool = False) -> Any:
+    """``value`` as settings record it: an ``env(...)`` placeholder as its name,
+    and every value inside a field named like a secret hidden, however deep
+    (a nested object or list under such a name is hidden whole)."""
     if isinstance(value, env):
         return f"<env {value.name}>"
-    if key and _SECRET_NAME.search(key) and isinstance(value, (str, int, float)) and not isinstance(value, bool):
-        return "<hidden>"
+    secret = secret or _is_secret_name(key)
     if isinstance(value, dict):
-        return {k: _redact(v, str(k)) for k, v in value.items()}
+        return {k: _redact(v, str(k), secret=secret) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_redact(v, key, secret=secret) for v in value]
+    if secret and value is not None and not isinstance(value, bool):
+        return HIDDEN
+    return value
+
+
+def _restore_env(value: Any) -> Any:
+    """Recorded settings made usable again: ``"<env NAME>"`` becomes ``env("NAME")``.
+    Raises ``ValueError`` at a hidden value, which only the model's definition has."""
+    if isinstance(value, str):
+        if value == HIDDEN:
+            raise ValueError("a hidden value")
+        match = _ENV_MARK.match(value)
+        return env(match.group("name")) if match else value
+    if isinstance(value, dict):
+        return {k: _restore_env(v) for k, v in value.items()}
     if isinstance(value, list):
-        return [_redact(v, key) for v in value]
+        return [_restore_env(v) for v in value]
     return value
 
 
@@ -124,6 +157,10 @@ class Reply:
     cut_off: bool = False
     request_id: str = ""
     raw: Any = None
+    # Of the input, the tokens read from the provider's cache; of the output, the
+    # tokens spent thinking (both counted in the totals above; None when not known).
+    cached_input_tokens: int | None = None
+    reasoning_tokens: int | None = None
 
 
 @dataclass
@@ -177,13 +214,17 @@ async def _image_bytes(url: str, client: httpx.AsyncClient) -> tuple[str, str]:
         return match.group("mime"), match.group("data")
     response = await client.get(url, timeout=60.0, follow_redirects=True)
     if response.status_code >= 400:
-        raise RuntimeError(f"image download failed with HTTP {response.status_code}: {url}")
+        # (worded as the providers word it, so a run leaves the picture out: see answers/executor.py)
+        raise RuntimeError(f"failed to download image (HTTP {response.status_code}): {url}")
     mime = response.headers.get("content-type", "image/jpeg").split(";")[0].strip() or "image/jpeg"
     return mime, base64.b64encode(response.content).decode("ascii")
 
 
 async def build_layout_body(layout: str, request: ModelRequest, client: httpx.AsyncClient) -> dict[str, Any]:
-    """The request body a layout sends, before the caller's ``body`` fields."""
+    """The request body a layout sends, before the caller's ``body`` fields. An
+    empty system prompt is left out. The ``anthropic`` and ``gemini`` layouts send
+    no temperature (current Claude models refuse one, and Gemini 3 models are
+    meant to keep their default): a model's ``body`` adds it."""
     if layout == "openai-chat":
         if request.images:
             user_content: Any = [
@@ -194,11 +235,10 @@ async def build_layout_body(layout: str, request: ModelRequest, client: httpx.As
             ]
         else:
             user_content = request.user
+        messages: list[dict[str, Any]] = [{"role": "system", "content": request.system}] if request.system else []
+        messages.append({"role": "user", "content": user_content})
         body: dict[str, Any] = {
-            "messages": [
-                {"role": "system", "content": request.system},
-                {"role": "user", "content": user_content},
-            ],
+            "messages": messages,
             "max_tokens": request.max_output_tokens,
             "temperature": request.temperature,
         }
@@ -206,21 +246,21 @@ async def build_layout_body(layout: str, request: ModelRequest, client: httpx.As
             body["response_format"] = {"type": "json_object"}
         return body
     if layout == "openai-responses":
-        body = {
-            "input": [
-                {"role": "system", "content": [{"type": "input_text", "text": request.system}]},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": part["text"]}
-                        if part["type"] == "text"
-                        else {"type": "input_image", "image_url": part["url"]}
-                        for part in request.content
-                    ],
-                },
-            ],
-            "max_output_tokens": request.max_output_tokens,
-        }
+        items: list[dict[str, Any]] = (
+            [{"role": "system", "content": [{"type": "input_text", "text": request.system}]}] if request.system else []
+        )
+        items.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": part["text"]}
+                    if part["type"] == "text"
+                    else {"type": "input_image", "image_url": part["url"]}
+                    for part in request.content
+                ],
+            }
+        )
+        body = {"input": items, "max_output_tokens": request.max_output_tokens}
         if request.json_mode:
             body["text"] = {"format": {"type": "json_object"}}
         return body
@@ -237,13 +277,10 @@ async def build_layout_body(layout: str, request: ModelRequest, client: httpx.As
                 )
             else:
                 content.append({"type": "image", "source": {"type": "url", "url": part["url"]}})
-        # No temperature: current Claude models refuse one (Model.anthropic adds it
-        # when given, for an older model).
-        return {
-            "system": request.system,
-            "messages": [{"role": "user", "content": content}],
-            "max_tokens": request.max_output_tokens,
-        }
+        body = {"messages": [{"role": "user", "content": content}], "max_tokens": request.max_output_tokens}
+        if request.system:
+            body = {"system": request.system, **body}
+        return body
     if layout == "gemini":
         parts: list[dict[str, Any]] = []
         for part in request.content:
@@ -252,22 +289,52 @@ async def build_layout_body(layout: str, request: ModelRequest, client: httpx.As
             else:
                 mime, data = await _image_bytes(part["url"], client)
                 parts.append({"inlineData": {"mimeType": mime, "data": data}})
-        generation: dict[str, Any] = {
-            "maxOutputTokens": request.max_output_tokens,
-            "temperature": request.temperature,
-        }
+        generation: dict[str, Any] = {"maxOutputTokens": request.max_output_tokens}
         if request.json_mode:
             generation["responseMimeType"] = "application/json"
-        return {
-            "systemInstruction": {"parts": [{"text": request.system}]},
-            "contents": [{"role": "user", "parts": parts}],
-            "generationConfig": generation,
-        }
+        body = {"contents": [{"role": "user", "parts": parts}], "generationConfig": generation}
+        if request.system:
+            body = {"systemInstruction": {"parts": [{"text": request.system}]}, **body}
+        return body
     raise ConfigError(f"Unknown request layout {layout!r}; use one of {', '.join(LAYOUTS)}")
 
 
-def _layout_reply(layout: str, data: dict[str, Any]) -> tuple[str, int | None, int | None, str | None, bool]:
-    """(text, input tokens, output tokens, stop reason, cut off) for a layout's response."""
+@dataclass
+class _Parsed:
+    """What a layout reads from a provider's reply."""
+
+    text: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cached_input_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    stop: str | None = None
+    cut: bool = False
+    # Why the provider gave no answer to use ("" when it gave one): a refusal, a
+    # safety stop, a blocked prompt, no capacity left.
+    stopped: str = ""
+
+
+def _sum(*values: Any) -> int | None:
+    numbers = [_to_int(v) for v in values]
+    known = [n for n in numbers if n is not None]
+    return sum(known) if known else None
+
+
+# Stop reasons that mean the provider gave no answer to use, by layout.
+_STOPPED_GEMINI = {
+    "SAFETY", "RECITATION", "LANGUAGE", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY",
+    "IMAGE_PROHIBITED_CONTENT", "IMAGE_RECITATION", "IMAGE_OTHER", "MALFORMED_RESPONSE",
+}
+_STOPPED_CHAT = {
+    "content_filter": "the reply was filtered (content_filter)",
+    "insufficient_system_resource": "the provider ran out of capacity (insufficient_system_resource)",
+    "aborted": "the provider stopped the reply (aborted)",
+}
+
+
+def _layout_reply(layout: str, data: dict[str, Any]) -> _Parsed:
+    """The reply text, token usage and stop reason, where each API puts them."""
     if layout == "openai-chat":
         choice = (data.get("choices") or [{}])[0] if isinstance(data.get("choices"), list) else {}
         message = choice.get("message") or {}
@@ -277,33 +344,76 @@ def _layout_reply(layout: str, data: dict[str, Any]) -> tuple[str, int | None, i
         else:
             text = str(raw or "")
         usage = data.get("usage") or {}
+        prompt = usage.get("prompt_tokens_details") if isinstance(usage.get("prompt_tokens_details"), dict) else {}
+        completion = usage.get("completion_tokens_details") if isinstance(usage.get("completion_tokens_details"), dict) else {}
         stop = choice.get("finish_reason")
-        return text, usage.get("prompt_tokens"), usage.get("completion_tokens"), stop, stop == "length"
+        stopped = _STOPPED_CHAT.get(str(stop), "")
+        if message.get("refusal"):
+            stopped = f"refusal: {str(message['refusal'])[:300]}"
+        return _Parsed(
+            text, _to_int(usage.get("prompt_tokens")), _to_int(usage.get("completion_tokens")),
+            _to_int(prompt.get("cached_tokens", usage.get("prompt_cache_hit_tokens"))),  # (DeepSeek also names it prompt_cache_hit_tokens)
+            _to_int(completion.get("reasoning_tokens")), stop, stop == "length", stopped,
+        )
     if layout == "openai-responses":
         from .openai_client import extract_responses_text
 
         usage = data.get("usage") or {}
         details = data.get("incomplete_details") if isinstance(data.get("incomplete_details"), dict) else {}
+        input_details = usage.get("input_tokens_details") if isinstance(usage.get("input_tokens_details"), dict) else {}
+        output_details = usage.get("output_tokens_details") if isinstance(usage.get("output_tokens_details"), dict) else {}
         stop = data.get("status")
-        cut = stop == "incomplete" and details.get("reason") == "max_output_tokens"
-        return extract_responses_text(data), usage.get("input_tokens"), usage.get("output_tokens"), stop, cut
+        stopped = ""
+        if stop == "incomplete" and details.get("reason") == "content_filter":
+            stopped = "the reply was filtered (content_filter)"
+        refusals = [
+            str(part.get("refusal", ""))
+            for item in data.get("output") or [] if isinstance(item, dict)
+            for part in item.get("content") or [] if isinstance(part, dict) and part.get("type") == "refusal"
+        ]
+        if refusals:
+            stopped = f"refusal: {refusals[0][:300]}"
+        return _Parsed(
+            extract_responses_text(data), _to_int(usage.get("input_tokens")), _to_int(usage.get("output_tokens")),
+            _to_int(input_details.get("cached_tokens")), _to_int(output_details.get("reasoning_tokens")),
+            stop, stop == "incomplete" and details.get("reason") == "max_output_tokens", stopped,
+        )
     if layout == "anthropic":
         blocks = data.get("content") if isinstance(data.get("content"), list) else []
         text = "".join(str(b.get("text", "")) for b in blocks if isinstance(b, dict) and b.get("type") == "text")
         usage = data.get("usage") or {}
+        output_details = usage.get("output_tokens_details") if isinstance(usage.get("output_tokens_details"), dict) else {}
         stop = data.get("stop_reason")
-        return text, usage.get("input_tokens"), usage.get("output_tokens"), stop, stop == "max_tokens"
+        stopped = ""
+        if stop == "refusal":
+            details = data.get("stop_details") if isinstance(data.get("stop_details"), dict) else {}
+            why = "; ".join(str(details[k]) for k in ("category", "explanation") if details.get(k))
+            stopped = f"refusal ({why})" if why else "refusal"
+        elif stop == "model_context_window_exceeded":
+            stopped = "the request and its answer do not fit the model's context window (model_context_window_exceeded)"
+        # The input is the uncached tokens plus those written to and read from the cache.
+        return _Parsed(
+            text, _sum(usage.get("input_tokens"), usage.get("cache_creation_input_tokens"), usage.get("cache_read_input_tokens")),
+            _to_int(usage.get("output_tokens")), _to_int(usage.get("cache_read_input_tokens")),
+            _to_int(output_details.get("thinking_tokens")), stop, stop == "max_tokens", stopped,
+        )
     if layout == "gemini":
         candidates = data.get("candidates") if isinstance(data.get("candidates"), list) else []
         first = candidates[0] if candidates and isinstance(candidates[0], dict) else {}
         parts = ((first.get("content") or {}).get("parts")) or []
         text = "".join(str(p.get("text", "")) for p in parts if isinstance(p, dict) and not p.get("thought"))
         usage = data.get("usageMetadata") or {}
-        output = usage.get("candidatesTokenCount")
-        if output is not None and usage.get("thoughtsTokenCount"):
-            output = int(output) + int(usage.get("thoughtsTokenCount") or 0)
+        thoughts = _to_int(usage.get("thoughtsTokenCount"))
+        output = _sum(usage.get("candidatesTokenCount"), thoughts) if usage.get("candidatesTokenCount") is not None else None
         stop = first.get("finishReason")
-        return text, usage.get("promptTokenCount"), output, stop, stop == "MAX_TOKENS"
+        stopped = f"the reply was stopped ({stop})" if stop in _STOPPED_GEMINI else ""
+        feedback = data.get("promptFeedback") if isinstance(data.get("promptFeedback"), dict) else {}
+        if not candidates and feedback.get("blockReason"):
+            stopped = f"the prompt was blocked ({feedback['blockReason']})"
+        return _Parsed(
+            text, _sum(usage.get("promptTokenCount"), usage.get("toolUsePromptTokenCount")), output,
+            _to_int(usage.get("cachedContentTokenCount")), thoughts, stop, stop == "MAX_TOKENS", stopped,
+        )
     raise ConfigError(f"Unknown request layout {layout!r}")
 
 
@@ -340,6 +450,9 @@ class Model:
     # and whether a failed OpenAI call is tried again through OpenRouter.
     reasoning_effort: str | None = None
     fallback_to_openrouter: bool = False
+    # Claude, Gemini and DeepSeek models: tokens added to every call's output limit
+    # for the model's thinking, which it spends from the same limit as the answer.
+    thinking_room: int = 0
 
     # ---- constructors ---------------------------------------------------------------
 
@@ -396,11 +509,15 @@ class Model:
         images: bool = True,
         url: str = "https://api.anthropic.com/v1/messages",
         timeout_s: float = 600.0,
+        thinking_room: int | None = None,
     ) -> "Model":
         """A Claude model (such as ``claude-opus-5-5``) through Anthropic's Messages
-        API. ``effort`` sets ``output_config.effort``; current Claude models think
-        on their own and take no ``temperature``, so it is sent only when given
-        (for an older model that accepts it). ``body`` adds request fields."""
+        API. ``effort`` sets ``output_config.effort`` (low, medium, high, xhigh or
+        max). Current Claude models think by default and refuse a ``temperature``
+        other than 1.0, so it is sent only when given (for an older model).
+        ``thinking_room`` tokens are added to every call's output limit for the
+        thinking (by default from the effort: 16,000 at the models' usual
+        ``high``). ``body`` adds request fields."""
         extra: dict[str, Any] = {"model": str(name)}
         if effort:
             extra["output_config"] = {"effort": str(effort)}
@@ -412,6 +529,7 @@ class Model:
             body=_merge_body(extra, body),
         )
         model.builtin, model.provider, model.api_key_env, model.key_header = "anthropic", "anthropic", str(api_key_env), "x-api-key"
+        model.thinking_room = _room(thinking_room, effort or ((body or {}).get("output_config") or {}).get("effort"))
         return model
 
     @classmethod
@@ -421,37 +539,71 @@ class Model:
         *,
         api_key_env: str = "GEMINI_API_KEY",
         temperature: float | None = None,
+        thinking_level: str | None = None,
         body: dict[str, Any] | None = None,
         images: bool = True,
         timeout_s: float = 600.0,
+        thinking_room: int | None = None,
     ) -> "Model":
-        """A Gemini model (such as ``gemini-2.5-pro``) through Google's
-        generateContent API; pictures are sent inside the request."""
-        extra: dict[str, Any] = {"generationConfig": {"temperature": float(temperature)}} if temperature is not None else {}
+        """A Gemini model (such as ``gemini-3.1-pro-preview``) through Google's
+        generateContent API; pictures are sent inside the request. No temperature
+        is sent unless given: Google asks that Gemini 3 models keep their default.
+        ``thinking_level`` sets ``generationConfig.thinkingConfig.thinkingLevel``
+        (minimal, low, medium or high); ``thinking_room`` tokens are added to every
+        call's output limit for the thinking (by default from the level: 16,000 at
+        the default ``high``)."""
+        generation: dict[str, Any] = {}
+        if temperature is not None:
+            generation["temperature"] = float(temperature)
+        if thinking_level:
+            generation["thinkingConfig"] = {"thinkingLevel": str(thinking_level)}
+        merged = _merge_body({"generationConfig": generation} if generation else {}, body)
         model = cls.http(
             name,
             f"https://generativelanguage.googleapis.com/v1beta/models/{name}:generateContent",
             layout="gemini", images=images, timeout_s=timeout_s,
             headers={"x-goog-api-key": env(api_key_env)},
-            body=_merge_body(extra, body),
+            body=merged,
         )
         model.builtin, model.provider, model.api_key_env, model.key_header = "gemini", "gemini", str(api_key_env), "x-goog-api-key"
+        thinking = (merged.get("generationConfig") or {}).get("thinkingConfig") or {}
+        budget = _to_int(thinking.get("thinkingBudget"))
+        if thinking_room is None and budget is not None and budget >= 0:
+            thinking_room = budget  # a fixed thinking budget (Gemini 2.5): that much room, 0 for none
+        model.thinking_room = _room(thinking_room, thinking.get("thinkingLevel"))
         return model
 
     @classmethod
     def deepseek(
         cls,
-        name: str = "deepseek-chat",
+        name: str = "deepseek-flash",
         *,
         api_key_env: str = "DEEPSEEK_API_KEY",
         base_url: str = "https://api.deepseek.com",
+        reasoning_effort: str | None = None,
         body: dict[str, Any] | None = None,
-        images: bool = False,
+        images: bool | None = None,
+        timeout_s: float = 600.0,
+        thinking_room: int | None = None,
     ) -> "Model":
-        """A DeepSeek model through its OpenAI-compatible API. Its chat models take
-        text only, so a survey with pictures is refused unless ``images=True``."""
-        model = cls.openai_compatible(name, base_url, api_key_env=api_key_env, model=name, body=body, images=images)
+        """A DeepSeek model through its OpenAI-compatible API: ``deepseek-flash``
+        (the default, which takes pictures) or ``deepseek-v4-pro`` (text only).
+        Both think by default; ``reasoning_effort`` is none (no thinking), low,
+        high or max, and ``thinking_room`` tokens are added to every call's output
+        limit for the thinking (by default from the effort: 16,000 at the default
+        ``high``). ``images`` defaults to whether the model is a Flash model."""
+        extra: dict[str, Any] = {"reasoning_effort": str(reasoning_effort)} if reasoning_effort else {}
+        merged = _merge_body(extra, body)
+        if images is None:
+            images = "flash" in str(name).lower()
+        model = cls.openai_compatible(
+            name, base_url, api_key_env=api_key_env, model=name, body=merged or None, images=images, timeout_s=timeout_s
+        )
         model.builtin, model.provider = "deepseek", "deepseek"
+        effort = merged.get("reasoning_effort")
+        if thinking_room is None and ((merged.get("thinking") or {}).get("type") == "disabled" or effort == "none"):
+            thinking_room = 0
+        model.thinking_room = _room(thinking_room, effort)
         return model
 
     @classmethod
@@ -501,6 +653,7 @@ class Model:
         model: str | None = None,
         body: dict[str, Any] | None = None,
         images: bool = True,
+        timeout_s: float = 180.0,
     ) -> "Model":
         """An endpoint that accepts OpenAI's chat format (local servers, many hosts)."""
         headers: dict[str, Any] = {}
@@ -514,6 +667,7 @@ class Model:
             layout="openai-chat",
             body=merged,
             images=images,
+            timeout_s=timeout_s,
         )
         instance.kind = "openai-compatible"
         if api_key_env:
@@ -574,6 +728,10 @@ class Model:
             out["stop_key"] = self.stop_key
             out["cut_off_values"] = list(self.cut_off_values or [])
         out["images"] = self.images
+        if self.kind != "function":
+            out["timeout_s"] = self.timeout_s
+        if self.thinking_room:
+            out["thinking_room"] = self.thinking_room
         return out
 
     # ---- calling a defined model -------------------------------------------------------
@@ -641,6 +799,8 @@ class Model:
             return reply, {"latency_ms": latency_ms, "status": "completed"}
         if self.kind not in {"http", "openai-compatible"} or not self.layout or not self.url:
             raise ConfigError(f"Model {self.name!r} cannot be called directly")
+        if self.thinking_room:
+            request = dataclasses.replace(request, max_output_tokens=request.max_output_tokens + self.thinking_room)
         body = _merge_body(await build_layout_body(self.layout, request, client), _resolve_secrets(self.body))
         sent_headers = dict(self.headers)
         if api_key and self.key_header:
@@ -655,7 +815,8 @@ class Model:
             data = response.json()
         except ValueError as exc:
             raise RuntimeError(f"{self.name} API error 502: the reply was not JSON") from exc
-        text, in_tokens, out_tokens, stop, cut = _layout_reply(self.layout, data)
+        parsed = _layout_reply(self.layout, data)
+        text, in_tokens, out_tokens, stop, cut = parsed.text, parsed.input_tokens, parsed.output_tokens, parsed.stop, parsed.cut
         if self.text_key is not None:
             text = self.text_key(data) if callable(self.text_key) else get_path(data, self.text_key)
             text = "" if text is None else str(text)
@@ -673,8 +834,13 @@ class Model:
             cut_off=bool(cut),
             request_id=request_id,
             raw=data,
+            cached_input_tokens=parsed.cached_input_tokens,
+            reasoning_tokens=parsed.reasoning_tokens,
         )
-        return reply, {"latency_ms": latency_ms, "status": "completed", "stop_reason": stop}
+        meta: dict[str, Any] = {"latency_ms": latency_ms, "status": "completed", "stop_reason": stop}
+        if parsed.stopped and not self.stop_key:
+            meta["stopped"] = parsed.stopped
+        return reply, meta
 
     # ---- asking a model directly -------------------------------------------------
 
@@ -690,7 +856,8 @@ class Model:
     ) -> Reply:
         """Ask the model one thing, outside a run: ``prompt`` and optional
         ``images`` (web links, ``data:`` addresses, or picture files), in the same
-        request shape a run sends. Returns the ``Reply``."""
+        request shape a run sends. Returns the ``Reply``; raises ``ProviderError``
+        when the provider refuses or stops without an answer."""
         from ..spec.pictures import picture_file_address
 
         pictures = [picture_file_address(str(image)) for image in images]
@@ -705,7 +872,9 @@ class Model:
         if pictures and not self.images:
             raise ConfigError(f"Model {self.name!r} takes no image input")
         async with httpx.AsyncClient() as http:
-            reply, _meta = await self.acall(request, client=http, api_key=api_key)
+            reply, meta = await self.acall(request, client=http, api_key=api_key)
+        if meta.get("stopped"):
+            raise ProviderError(f"{self.name} gave no answer: {meta['stopped']}")
         return reply
 
     def ask(
@@ -783,7 +952,8 @@ class Model:
     def from_settings(cls, settings: dict[str, Any]) -> "Model | None":
         """A built-in model made again from the settings a run recorded
         (``Model.settings``); None for a model only its definition can make (an
-        HTTP model of your own, a function)."""
+        HTTP model of your own, a function, or a built-in model whose body hides a
+        field named like a secret)."""
         if not isinstance(settings, dict):
             return None
         kind, builtin, name = settings.get("kind"), settings.get("builtin"), str(settings.get("name") or "")
@@ -795,28 +965,46 @@ class Model:
                 name, reasoning_effort=effort, api_key_env=str(settings.get("api_key_env") or "OPENAI_API_KEY"),
                 fallback_to_openrouter=bool(settings.get("fallback_to_openrouter")),
             )
-        key_env = settings.get("api_key_env")
+        if builtin not in {"anthropic", "gemini", "deepseek"}:
+            return None
+        try:
+            body = _restore_env(copy.deepcopy(settings.get("body") or {}))
+        except ValueError:
+            return None  # a secret written into the body is not recorded
+        common: dict[str, Any] = {"api_key_env": str(settings.get("api_key_env")), "images": settings.get("images")}
+        if settings.get("timeout_s") is not None:
+            common["timeout_s"] = float(settings["timeout_s"])
+        common["thinking_room"] = int(settings.get("thinking_room") or 0)
         if builtin == "anthropic":
-            body = dict(settings.get("body") or {})
+            body.pop("model", None)
+            effort = (body.get("output_config") or {}).pop("effort", None) if isinstance(body.get("output_config"), dict) else None
+            if body.get("output_config") == {}:
+                body.pop("output_config")
             return cls.anthropic(
-                name, api_key_env=str(key_env), effort=(body.get("output_config") or {}).get("effort"),
-                temperature=body.get("temperature"), images=bool(settings.get("images", True)),
-                url=str(settings.get("url") or "https://api.anthropic.com/v1/messages"),
-                body={k: v for k, v in body.items() if k not in {"model", "output_config", "temperature"}} or None,
+                name, effort=effort, temperature=body.pop("temperature", None),
+                url=str(settings.get("url") or "https://api.anthropic.com/v1/messages"), body=body or None,
+                **{**common, "images": bool(common["images"] if common["images"] is not None else True)},
             )
         if builtin == "gemini":
-            body = dict(settings.get("body") or {})
-            temperature = (body.get("generationConfig") or {}).get("temperature")
-            rest = copy.deepcopy(body)
-            (rest.get("generationConfig") or {}).pop("temperature", None)
-            if rest.get("generationConfig") == {}:
-                rest.pop("generationConfig")
-            return cls.gemini(name, api_key_env=str(key_env), temperature=temperature, body=rest or None, images=bool(settings.get("images", True)))
-        if builtin == "deepseek":
-            body = {k: v for k, v in dict(settings.get("body") or {}).items() if k != "model"}
-            base = str(settings.get("url") or "https://api.deepseek.com/chat/completions").rsplit("/chat/completions", 1)[0]
-            return cls.deepseek(name, api_key_env=str(key_env), base_url=base, body=body or None, images=bool(settings.get("images", False)))
-        return None
+            generation = body.get("generationConfig") if isinstance(body.get("generationConfig"), dict) else {}
+            temperature = generation.pop("temperature", None)
+            thinking = generation.get("thinkingConfig") if isinstance(generation.get("thinkingConfig"), dict) else {}
+            level = thinking.pop("thinkingLevel", None)
+            if "thinkingConfig" in generation and not thinking:
+                generation.pop("thinkingConfig")
+            if "generationConfig" in body and not generation:
+                body.pop("generationConfig")
+            return cls.gemini(
+                name, temperature=temperature, thinking_level=level, body=body or None,
+                **{**common, "images": bool(common["images"] if common["images"] is not None else True)},
+            )
+        body.pop("model", None)
+        effort = body.pop("reasoning_effort", None)
+        base = str(settings.get("url") or "https://api.deepseek.com/chat/completions").rsplit("/chat/completions", 1)[0]
+        return cls.deepseek(
+            name, base_url=base, reasoning_effort=effort, body=body or None,
+            **{**common, "images": bool(common["images"]) if common["images"] is not None else None},
+        )
 
     def check(self, *, api_key: str | None = None) -> ModelCheck:
         """One tiny call: was the reply text found, and were usage and stop reason?"""
@@ -826,6 +1014,21 @@ class Model:
 def _effort(value: Any) -> str | None:
     text = str(value or "").strip().lower()
     return text or None
+
+
+# Output room for thinking, by effort or thinking level (the OpenAI presets use
+# the same steps: providers/presets.py). An unknown or unset level gets the room
+# of "high", the level most models think at by default.
+THINKING_ROOM = {"none": 0, "minimal": 2000, "low": 2000, "medium": 8000, "high": 16000, "xhigh": 24000, "max": 32000}
+
+
+def _room(given: int | None, level: Any) -> int:
+    if given is not None:
+        room = _to_int(given)
+        if room is None or room < 0:
+            raise ConfigError(f"thinking_room must be a whole number of tokens, 0 or more; got {given!r}")
+        return room
+    return THINKING_ROOM.get(str(level or "high").strip().lower(), THINKING_ROOM["high"])
 
 
 class _BearerEnv(env):

@@ -242,7 +242,10 @@ def ranking_items(blocks: Blocks) -> dict[str, dict[str, Any]]:
 
 def broken_rankings(values: dict[str, str], rankings: dict[str, dict[str, Any]], touched: set[str]) -> list[str]:
     """The rankings (question IDs) among those with a ``touched`` item whose ranks
-    (``values``, by answer ID) are not a ranking the question allows."""
+    (``values``, by answer ID) are not a complete ranking the question allows: a
+    rank given twice or skipped, more items ranked than allowed, or fewer than it
+    requires (every item, without a minimum). An item with no usable rank (left
+    out, blank, not a whole number) counts as unranked."""
     groups: dict[str, list[str]] = {}
     for answer_id, info in rankings.items():
         groups.setdefault(info["group"], []).append(answer_id)
@@ -255,7 +258,7 @@ def broken_rankings(values: dict[str, str], rankings: dict[str, dict[str, Any]],
             match = re.fullmatch(r"\s*(\d+)(?:\.0+)?\s*", str(values.get(answer_id, "") or ""))
             ranks.append(int(match.group(1)) if match else None)
         info = rankings[answer_ids[0]]
-        if se.ranking_problem(ranks, min_items=info["min"], max_items=info["max"]):
+        if se.ranking_problem(ranks, min_items=info["min"], max_items=info["max"], complete=True):
             broken.append(group)
     return broken
 

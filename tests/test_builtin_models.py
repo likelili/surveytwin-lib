@@ -91,7 +91,8 @@ def test_claude_through_the_messages_api(monkeypatch):
     assert sent.headers["x-api-key"] == "sk-ant" and sent.headers["anthropic-version"] == "2023-06-01"
     body = rec.body
     assert body["model"] == "claude-opus-5-5" and body["output_config"] == {"effort": "low"}
-    assert body["system"] == "You are a survey respondent." and body["max_tokens"] == 300
+    # the answer's 300 tokens plus room for the thinking (2,000 at effort "low")
+    assert body["system"] == "You are a survey respondent." and body["max_tokens"] == 300 + 2000
     assert "temperature" not in body  # current Claude models refuse one
     assert (reply.text, reply.input_tokens, reply.output_tokens) == ('{"answers": []}', 12, 7)
     assert st.Model.anthropic("claude-3-haiku", temperature=0.2).body["temperature"] == 0.2
@@ -112,12 +113,13 @@ def test_gemini_through_generate_content(monkeypatch):
 def test_deepseek_through_its_openai_compatible_api(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "ds-key")
     model = st.Model.deepseek()
-    assert model.name == "deepseek-chat" and model.images is False
+    assert model.name == "deepseek-flash" and model.images is True  # Flash takes pictures
+    assert st.Model.deepseek("deepseek-v4-pro").images is False
     rec = Recorder({"choices": [{"message": {"content": '{"answers": []}'}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 5, "completion_tokens": 2}})
     reply, _meta = call(model, request(), rec)
     assert str(rec.requests[0].url) == "https://api.deepseek.com/chat/completions"
     assert rec.requests[0].headers["authorization"] == "Bearer ds-key"
-    assert rec.body["model"] == "deepseek-chat" and reply.text == '{"answers": []}'
+    assert rec.body["model"] == "deepseek-flash" and reply.text == '{"answers": []}'
 
 
 def test_a_key_given_to_the_call_replaces_the_models_own(monkeypatch):

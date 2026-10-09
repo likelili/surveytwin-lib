@@ -157,9 +157,14 @@ columns, MaxDiff items, conjoint levels), is one of:
   given to `read_survey` as data rather than a file, `folder=` says where
   relative paths start.
 
-`read_survey` reads every file when it reads the survey. A missing file, a file
-that is not a PNG, JPEG, WEBP or GIF picture (its type is read from its content),
-or one larger than 20 MB is an error naming the field. The survey keeps each path
+`read_survey` reads every file when it reads the survey. A missing or unreadable
+file, a file that is not a PNG, JPEG, WEBP or GIF picture (its type is read from
+its content), one larger than 20 MB, or one that is damaged or cut off is an
+error naming the field: the library checks each picture's structure to its end
+(a PNG's chunks, their checksums and its complete image data; a JPEG's segments
+up to its end marker; a GIF's blocks; a WEBP's chunks), without a picture
+library. A `data:` address in the JSON is checked the same way, and must hold
+base64 data of the type it names. The survey keeps each path
 as written; a run sends the picture inside its request, because a model cannot
 open a file on this computer, and a saved run keeps one copy of each picture.
 Where the files live and how they are organized is up to you or your

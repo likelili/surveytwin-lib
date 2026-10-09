@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "surveytwin"
 version = "0.1.1"
-description = "Run Qualtrics surveys on simulated respondents (digital twins) and get Qualtrics-format data back."
+description = "Run surveys on simulated respondents (digital twins): a standard survey format, QSF import, and data in the layout of a Qualtrics export."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]

@@ -71,7 +71,8 @@ dataclass) of its definition; to change a model, build a new one.
 | `key_prefix` | `str` | What comes before that key in its header: `"Bearer "` for `Authorization`, else empty. |
 | `reasoning_effort` | `str \| None` | An OpenAI or OpenRouter model's reasoning effort, replacing the preset's own; `None` keeps the preset's. |
 | `fallback_to_openrouter` | `bool` | Whether a failed OpenAI call is made once more through OpenRouter (`Model.openai(..., fallback_to_openrouter=True)`). `False` by default. |
-| `timeout_s` | `float` | How many seconds an HTTP model waits for each call (default 180). Presets have their own: 240 seconds for the Responses API, 180 for chat completions. |
+| `timeout_s` | `float` | How many seconds an HTTP model waits for each call (default 180; 600 for Claude, Gemini and DeepSeek). Presets have their own: 240 seconds for the Responses API, 180 for chat completions. |
+| `thinking_room` | `int` | Tokens added to the output limit of every call of an HTTP model, for its thinking: a Claude, Gemini or DeepSeek model thinks by default and spends that thinking from the same limit as its answer. Set from the effort or thinking level (see [Thinking room](#thinking-room)); 0 for a model of your own. |
 | `source` | `str` | Where the model was defined, when the command line read it from a file: `"FILE.py:NAME (sha256 <first 12 digits>)"`, the file's name without its folder. Empty otherwise. |
 | `settings` | `dict[str, Any]` | Property: what a run records about the model, never a key. See [`Model.settings`](#modelsettings). |
 
@@ -182,7 +183,10 @@ Model.openai(
 ```
 
 An OpenAI model, called the way a preset is (see [`Model.preset`](#modelpreset)
-for every request it sends).
+for every request it sends). A reasoning model (GPT-5 and every later GPT, such
+as `gpt-6-astra`, and the o-series) is called through the Responses API with a
+reasoning effort and no temperature; another model through chat completions,
+with `max_completion_tokens` and a temperature.
 
 **Parameters**
 
@@ -251,6 +255,7 @@ Model.anthropic(
     images: bool = True,
     url: str = 'https://api.anthropic.com/v1/messages',
     timeout_s: float = 600.0,
+    thinking_room: int | None = None,
 ) -> Model
 ```
 
@@ -258,7 +263,10 @@ A Claude model through Anthropic's Messages API: the `anthropic` layout (see
 [The four request layouts](#the-four-request-layouts)) at Anthropic's address,
 with the key in the `x-api-key` header and `anthropic-version: 2023-06-01`.
 Current Claude models think before they answer (the thinking is not part of the
-reply text) and take no temperature, so none is sent unless you give one.
+reply text, but it is spent from `max_tokens`, so each call gets room for it)
+and refuse a temperature other than 1.0, so none is sent unless you give one. A
+refusal (`stop_reason` `"refusal"`) is not an answer: the call fails with the
+reason, and the run asks again.
 
 **Parameters**
 
@@ -276,6 +284,9 @@ reply text) and take no temperature, so none is sent unless you give one.
 - `url` (`str`, default the Messages API): another address that speaks the same
   API.
 - `timeout_s` (`float`, default `600.0`): seconds to wait for each call.
+- `thinking_room` (`int | None`, default `None`): tokens added to every call's
+  `max_tokens` for the thinking. `None` sets it from `effort`: see
+  [Thinking room](#thinking-room) (16,000 when `effort` is not given).
 
 **Returns** `Model`: with `kind="http"`, `builtin="anthropic"`.
 
@@ -297,28 +308,45 @@ Model.gemini(
     *,
     api_key_env: str = 'GEMINI_API_KEY',
     temperature: float | None = None,
+    thinking_level: str | None = None,
     body: dict[str, Any] | None = None,
     images: bool = True,
     timeout_s: float = 600.0,
+    thinking_room: int | None = None,
 ) -> Model
 ```
 
 A Gemini model through Google's `generateContent` API: the `gemini` layout at
 `https://generativelanguage.googleapis.com/v1beta/models/<name>:generateContent`,
 with the key in the `x-goog-api-key` header. Pictures are sent inside the
-request.
+request. Google now suggests its Interactions API for new projects and keeps
+`generateContent` fully supported; the library stays with `generateContent`,
+which keeps nothing between calls, where the Interactions API stores each
+request unless told not to. Gemini 3 models think by default (at level `high`),
+spending the thinking from `maxOutputTokens`, so each call gets room for it; and
+Google asks that their temperature stay at its default, so none is sent unless
+you give one. A reply stopped for safety, or a blocked prompt, is not an answer:
+the call fails with the reason, and the run asks again.
 
 **Parameters**
 
-- `name` (`str`): the Gemini model, such as `"gemini-2.5-pro"`.
+- `name` (`str`): the Gemini model, such as `"gemini-3.1-pro-preview"`.
 - `api_key_env` (`str`, default `'GEMINI_API_KEY'`): the environment variable
   that holds the key.
 - `temperature` (`float | None`, default `None`): `generationConfig.temperature`;
-  `None` keeps the layout's 0.3.
+  `None` sends none (the model's default).
+- `thinking_level` (`str | None`, default `None`):
+  `generationConfig.thinkingConfig.thinkingLevel` (`"minimal"`, `"low"`,
+  `"medium"` or `"high"`) for a Gemini 3 model. `None` leaves the model's
+  default. (A Gemini 2.5 model takes `thinkingBudget` in `body` instead; its
+  room is then that budget.)
 - `body` (`dict[str, Any] | None`, default `None`): more request fields, merged
   as for `Model.http`.
 - `images` (`bool`, default `True`): whether to send pictures.
 - `timeout_s` (`float`, default `600.0`): seconds to wait for each call.
+- `thinking_room` (`int | None`, default `None`): tokens added to every call's
+  `maxOutputTokens` for the thinking. `None` sets it from the thinking level:
+  see [Thinking room](#thinking-room) (16,000 at the default `high`).
 
 **Returns** `Model`: with `kind="http"`, `builtin="gemini"`.
 
@@ -326,28 +354,44 @@ request.
 
 ```python
 Model.deepseek(
-    name: str = 'deepseek-chat',
+    name: str = 'deepseek-flash',
     *,
     api_key_env: str = 'DEEPSEEK_API_KEY',
     base_url: str = 'https://api.deepseek.com',
+    reasoning_effort: str | None = None,
     body: dict[str, Any] | None = None,
-    images: bool = False,
+    images: bool | None = None,
+    timeout_s: float = 600.0,
+    thinking_room: int | None = None,
 ) -> Model
 ```
 
 A DeepSeek model through its OpenAI-compatible API (`<base_url>/chat/completions`,
-the key as `Authorization: Bearer ...`). Its chat models take text only, so a run
-of a survey with pictures stops unless you set `images=True` for a model that
-takes them.
+the key as `Authorization: Bearer ...`). DeepSeek's models are `deepseek-flash`
+(DeepSeek V4.1 Flash, which takes pictures) and `deepseek-v4-pro` (text only);
+the names `deepseek-chat` and `deepseek-reasoner` were retired on 2026-07-24.
+Both models think by default, spending the thinking from `max_tokens`, so each
+call gets room for it. A reply that is filtered, or cut short when DeepSeek runs
+out of capacity, is not an answer: the call fails with the reason, and the run
+asks again.
 
 **Parameters**
 
-- `name` (`str`, default `'deepseek-chat'`): the DeepSeek model.
+- `name` (`str`, default `'deepseek-flash'`): the DeepSeek model.
 - `api_key_env` (`str`, default `'DEEPSEEK_API_KEY'`): the environment variable
   that holds the key.
 - `base_url` (`str`, default `'https://api.deepseek.com'`): the API's address.
+- `reasoning_effort` (`str | None`, default `None`): `"none"` (no thinking),
+  `"low"`, `"high"` or `"max"`. `None` leaves DeepSeek's default (`high`).
 - `body` (`dict[str, Any] | None`, default `None`): more request fields.
-- `images` (`bool`, default `False`): whether the model takes pictures.
+- `images` (`bool | None`, default `None`): whether the model takes pictures.
+  `None`: yes for a Flash model, no otherwise; a run of a survey with pictures
+  on a model without them stops unless you accept missing pictures.
+- `timeout_s` (`float`, default `600.0`): seconds to wait for each call.
+- `thinking_room` (`int | None`, default `None`): tokens added to every call's
+  `max_tokens` for the thinking. `None` sets it from the effort: see
+  [Thinking room](#thinking-room) (16,000 at the default `high`, none at
+  `"none"`).
 
 **Returns** `Model`: with `kind="openai-compatible"`, `builtin="deepseek"`.
 
@@ -430,7 +474,7 @@ claude = st.Model.http(
 )
 gemini = st.Model.http(
     "gemini",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent",
     layout="gemini",
     headers={"x-goog-api-key": st.env("GEMINI_API_KEY")},
 )
@@ -439,8 +483,8 @@ print(gemini.settings["url"])
 ```
 
 ```
-{'name': 'claude-sonnet', 'kind': 'http', 'layout': 'anthropic', 'url': 'https://api.anthropic.com/v1/messages', 'headers': {'x-api-key': '<hidden>', 'anthropic-version': '<hidden>'}, 'body': {'model': 'claude-sonnet-5'}, 'images': True}
-https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent
+{'name': 'claude-sonnet', 'kind': 'http', 'layout': 'anthropic', 'url': 'https://api.anthropic.com/v1/messages', 'headers': {'x-api-key': '<hidden>', 'anthropic-version': '<hidden>'}, 'body': {'model': 'claude-sonnet-5'}, 'images': True, 'timeout_s': 180.0}
+https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent
 ```
 
 ```python
@@ -460,8 +504,13 @@ and where it reads the reply. No layout sends a model name: give it in `body`
   in order), `max_tokens`, `temperature`, and in JSON mode
   `response_format: {"type": "json_object"}`.
 - Reads the text from `choices.0.message.content`, the token counts from
-  `usage.prompt_tokens` and `usage.completion_tokens`, and the stop reason from
-  `choices.0.finish_reason`. `"length"` means cut off.
+  `usage.prompt_tokens` and `usage.completion_tokens` (of which cached:
+  `usage.prompt_tokens_details.cached_tokens`, or DeepSeek's
+  `usage.prompt_cache_hit_tokens`; thinking:
+  `usage.completion_tokens_details.reasoning_tokens`), and the stop reason from
+  `choices.0.finish_reason`. `"length"` means cut off; `"content_filter"`, a
+  `message.refusal`, and DeepSeek's `"insufficient_system_resource"` and
+  `"aborted"` mean no answer.
 
 **`openai-responses`**: OpenAI's Responses API.
 
@@ -469,9 +518,11 @@ and where it reads the reply. No layout sends a model name: give it in `body`
   `input_image` parts in order), `max_output_tokens`, and in JSON mode
   `text: {"format": {"type": "json_object"}}`. It sends no temperature.
 - Reads the text of every `message` item in `output`, the token counts from
-  `usage.input_tokens` and `usage.output_tokens`, and the stop reason from
-  `status`. `"incomplete"`, with `incomplete_details.reason` `"max_output_tokens"`,
-  means cut off.
+  `usage.input_tokens` and `usage.output_tokens` (of which cached:
+  `input_tokens_details.cached_tokens`; thinking:
+  `output_tokens_details.reasoning_tokens`), and the stop reason from `status`.
+  `"incomplete"`, with `incomplete_details.reason` `"max_output_tokens"`, means
+  cut off; with `"content_filter"`, or a `refusal` part, no answer.
 
 **`anthropic`**: Anthropic's Messages API.
 
@@ -479,22 +530,34 @@ and where it reads the reply. No layout sends a model name: give it in `body`
   order: an image by its URL, or as base64 data for a `data:` address) and
   `max_tokens`. It sends no temperature, which current Claude models refuse; add
   one in `body` for an older model. It has no JSON mode; the prompt asks for JSON.
-- Reads the `text` blocks of `content`, the token counts from
-  `usage.input_tokens` and `usage.output_tokens`, and the stop reason from
-  `stop_reason`. `"max_tokens"` means cut off.
+- Reads the `text` blocks of `content` (leaving out thinking blocks); the input
+  tokens as `usage.input_tokens` plus `cache_creation_input_tokens` and
+  `cache_read_input_tokens` (the input is all three; the cached part is the last),
+  the output tokens from `usage.output_tokens` (thinking:
+  `output_tokens_details.thinking_tokens`), and the stop reason from
+  `stop_reason`. `"max_tokens"` means cut off; `"refusal"` and
+  `"model_context_window_exceeded"` mean no answer.
 
 **`gemini`**: Google's Gemini `generateContent`.
 
 - Sends `systemInstruction`, `contents` (one user turn of `text` and
   `inlineData` parts in order: the library downloads each image and sends it
-  inline), and `generationConfig` with `maxOutputTokens`, `temperature` and, in
-  JSON mode, `responseMimeType: "application/json"`.
+  inline), and `generationConfig` with `maxOutputTokens` and, in JSON mode,
+  `responseMimeType: "application/json"`. It sends no temperature (Google asks
+  that Gemini 3 models keep their default); add one in `body`.
 - Reads the `text` parts of `candidates.0.content`, leaving out thought parts;
-  the input tokens from `usageMetadata.promptTokenCount`; the output tokens from
-  `candidatesTokenCount` plus `thoughtsTokenCount`; and the stop reason from
-  `candidates.0.finishReason`. `"MAX_TOKENS"` means cut off.
+  the input tokens from `usageMetadata.promptTokenCount` (cached:
+  `cachedContentTokenCount`); the output tokens from `candidatesTokenCount` plus
+  `thoughtsTokenCount` (thinking: the latter); and the stop reason from
+  `candidates.0.finishReason`. `"MAX_TOKENS"` means cut off; a safety stop
+  (`"SAFETY"`, `"RECITATION"`, `"PROHIBITED_CONTENT"`, ...) or a prompt blocked
+  in `promptFeedback.blockReason` means no answer.
 
-A reply with an HTTP error status, or one that is not JSON, fails the call.
+Every layout leaves out an empty system text. A reply with an HTTP error status,
+or one that is not JSON, fails the call. A reply that gives no answer (a refusal,
+a safety stop, a blocked prompt) fails it too, with the reason
+(`"<name> gave no answer: <reason>"`); its tokens are still recorded, with the
+status `"stopped"`, and the run asks again as after any failed call.
 
 #### Adding to the request body
 
@@ -510,9 +573,13 @@ every call, the retry with twice the room included: `body={"max_tokens": 8192}`
 caps the output of an `anthropic` or `openai-chat` model, whatever limit the run
 asks for (see `ModelRequest.max_output_tokens`). The body is recorded with the
 results, each `env(...)` shown by its name. A field whose name says it holds a
-secret (`api_key`, `token`, `secret`, `password`, `authorization`, ...) is
-recorded as `<hidden>` even when written as plain text; give keys with
-`env(...)` all the same.
+secret (`api_key`, `secret`, `password`, `credentials`, `authorization`,
+`auth`, `cookie`, a name ending in `token` such as `access_token`, ...) is
+recorded as `<hidden>` even when written as plain text, and so is everything
+inside it (`{"credentials": {"value": ...}}`). A field that counts tokens
+(`max_tokens`, `maxOutputTokens`, `budget_tokens`) is not a secret and is
+recorded as it is. Give keys with `env(...)` all the same: a built-in model
+whose body hides a secret cannot be made again from its settings.
 
 #### Replies in another shape
 
@@ -532,6 +599,7 @@ Model.openai_compatible(
     model: str | None = None,
     body: dict[str, Any] | None = None,
     images: bool = True,
+    timeout_s: float = 180.0,
 ) -> Model
 ```
 
@@ -555,6 +623,7 @@ sent as `Authorization: Bearer <key>`, and the model name in the body.
 - `body` (`dict[str, Any] | None`, default `None`): more request fields, as for
   `Model.http`. A `"model"` here wins over `model`.
 - `images` (`bool`, default `True`): whether the model takes image input.
+- `timeout_s` (`float`, default `180.0`): how many seconds to wait for each call.
 
 **Returns** `Model`: with `kind="openai-compatible"` and `layout="openai-chat"`.
 
@@ -572,7 +641,7 @@ print(local.settings)
 
 ```
 http://localhost:8000/v1/chat/completions
-{'name': 'llama', 'kind': 'openai-compatible', 'layout': 'openai-chat', 'url': 'http://localhost:8000/v1/chat/completions', 'headers': {'Authorization': '<hidden>'}, 'body': {'model': 'llama'}, 'images': True}
+{'name': 'llama', 'kind': 'openai-compatible', 'layout': 'openai-chat', 'url': 'http://localhost:8000/v1/chat/completions', 'headers': {'Authorization': '<hidden>'}, 'body': {'model': 'llama'}, 'images': True, 'timeout_s': 180.0}
 ```
 
 ### `Model.from_function`
@@ -756,8 +825,10 @@ model is not asked again here; the retry of a cut-off reply happens in the run
 
 **Returns** `tuple[Reply, dict[str, Any]]`: the reply, and a short summary:
 `latency_ms`, `status` (`"completed"`), for an HTTP model `stop_reason` (as
-read, or `None`), and for an OpenAI model `providers` (the providers that
-answered).
+read, or `None`) and, when the provider gave no answer to use, `stopped` (why:
+a refusal, a safety stop, a blocked prompt), and for an OpenAI model
+`providers` (the providers that answered). The output limit sent is the
+request's `max_output_tokens` plus the model's `thinking_room`.
 
 **Raises**
 
@@ -872,6 +943,8 @@ for code that is not async.
 - `ConfigError`: a picture file cannot be used, or the model takes no pictures
   and some were given; an `env(...)` variable is not set.
 - `RuntimeError`: the address answered with an HTTP error status.
+- `ProviderError`: the provider gave no answer (a refusal, a safety stop, a
+  blocked prompt); the message says why.
 
 ### `Model.ask`
 
@@ -922,9 +995,12 @@ Model.from_settings(settings: dict[str, Any]) -> Model | None
 
 A built-in model made again from the settings a run recorded
 (`results.run["config"]["model"]`): `rerun_flagged` uses it, so a saved run of a
-built-in model can be asked again without giving the model. `None` for a model
-of your own (`Model.http`, `Model.openai_compatible` without `builtin`, a
-function), which only its definition can make.
+built-in model can be asked again without giving the model. Every setting comes
+back as it was: the body (each `<env NAME>` as `env("NAME")` again), the effort,
+temperature and thinking level, the address, the timeout, the thinking room and
+`images`. `None` for a model of your own (`Model.http`, `Model.openai_compatible`
+without `builtin`, a function), which only its definition can make, and for a
+built-in model whose body has a field hidden as a secret.
 
 **Parameters**
 
@@ -947,9 +1023,11 @@ Property. What a run records about the model, in the run settings and in
 - For other kinds: `name` and `kind`; `builtin` and `api_key_env` for a built-in
   model; then, when they are set, `layout`, `url` without its query string,
   `headers` with every value shown as `<hidden>`, `body` with each `env(...)`
-  shown as `<env NAME>` and each field named like a secret shown as `<hidden>`,
-  `text_key` (a function shows as `<function>`), `usage_keys`, `stop_key` and
-  `cut_off_values`; and `images`.
+  shown as `<env NAME>` and each field named like a secret shown as `<hidden>`
+  (see [Adding to the request body](#adding-to-the-request-body)), `text_key` (a
+  function shows as `<function>`), `usage_keys`, `stop_key` and
+  `cut_off_values`; then `images`, `timeout_s` (not for a function model), and
+  `thinking_room` when it is not 0.
 - `defined_in`, the `source`, when it is set.
 
 **Example**
@@ -1073,6 +1151,8 @@ surveytwin.Reply(
     cut_off: bool = False,
     request_id: str = '',
     raw: Any = None,
+    cached_input_tokens: int | None = None,
+    reasoning_tokens: int | None = None,
 )
 ```
 
@@ -1090,6 +1170,8 @@ one for an HTTP model. A record (a dataclass).
 | `cut_off` | `bool` | `True` when the output limit stopped the reply. The call is asked again once with twice the room. |
 | `request_id` | `str` | The provider's ID for the request, kept in the usage record. An HTTP model takes it from the `request-id` or `x-request-id` header, or else the reply's `id`. |
 | `raw` | `Any` | The whole reply as received: for an HTTP model, parsed from JSON. `ModelCheck.response` shows it. |
+| `cached_input_tokens` | `int \| None` | Of `input_tokens`, those read from the provider's cache; `None` when unknown. |
+| `reasoning_tokens` | `int \| None` | Of `output_tokens`, those spent thinking; `None` when unknown. |
 
 A count left at `None` is recorded as 0 in the usage record, with
 `extra["usage_known"]` set to `False` (see
@@ -1180,15 +1262,55 @@ print([(u["status"], u["extra"]["usage_known"]) for u in results.usage])
 [('completed', False), ('completed', False)]
 ```
 
+## Thinking room
+
+Claude, Gemini and DeepSeek models think before they answer by default, and spend
+that thinking from the same output limit as the answer. A limit sized for the
+answers alone can then run out before the answers are written. So each call of
+these models asks for the run's limit plus the model's `thinking_room`, set from
+its effort or thinking level (the same steps the OpenAI presets add for their
+reasoning):
+
+| Effort or level | Room (tokens) |
+|---|---|
+| `none` | 0 |
+| `minimal`, `low` | 2,000 |
+| `medium` | 8,000 |
+| `high`, or not given | 16,000 |
+| `xhigh` | 24,000 |
+| `max` | 32,000 |
+
+Give `thinking_room=` to set it yourself (0 for a model that does not think).
+Only the tokens a model writes count; a higher limit costs nothing by itself. A
+fixed limit you put in `body` (`{"max_tokens": 8192}`) wins over both.
+
+**Example**
+
+```python
+print(st.Model.anthropic("claude-opus-5-5").thinking_room, st.Model.anthropic("claude-opus-5-5", effort="low").thinking_room)
+print(st.Model.gemini("gemini-3.1-pro-preview", thinking_level="medium").thinking_room)
+print(st.Model.deepseek(reasoning_effort="none").thinking_room, st.Model.deepseek("deepseek-v4-pro").images)
+```
+
+```
+16000 2000
+8000
+0 False
+```
+
 ## Token counts, not costs
 
 The library has no prices and computes no cost. It keeps each call's token
 counts as the provider reported them: input and output tokens for every model,
-and for presets also cached input tokens and reasoning tokens. They reach
+and, where the provider reports them, cached input tokens and reasoning (thinking)
+tokens (OpenAI, OpenRouter, Claude, Gemini and DeepSeek do). They reach
 `on_usage` and `results.usage` as usage records, and `results.usage_totals`
 adds them up (see [Running a plan](running.md#usagerecord) and
-[Results](results.md)). For a model you define, a count the reply did not give is
-recorded as 0, with `extra["usage_known"]` set to `False`.
+[Results](results.md)). A record's `provider` is the built-in model's provider
+(`"openai"`, `"openrouter"`, `"anthropic"`, `"gemini"`, `"deepseek"`), or how a
+model of your own is called (`"http"`, `"openai-compatible"`, `"function"`);
+`extra["kind"]` gives the model's `kind`. For a model you define, a count the
+reply did not give is recorded as 0, with `extra["usage_known"]` set to `False`.
 
 See also: [Running a plan](running.md), [Results](results.md),
 [Configuring and planning a run](configure-and-plan.md).

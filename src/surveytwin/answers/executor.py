@@ -1108,6 +1108,7 @@ _IMAGE_INPUT_ERROR_MARKERS = (
     "failed to download",
     "unsupported image",
     "could not process image",
+    "image exceeds",  # Claude: a picture over its size limit
     "image_url",
 )
 
@@ -2453,11 +2454,16 @@ def _flag_best_worst_conflicts(
     return output
 
 
-def ranking_problem(ranks: list[int | None], *, min_items: int | None = None, max_items: int | None = None) -> str:
+def ranking_problem(
+    ranks: list[int | None], *, min_items: int | None = None, max_items: int | None = None, complete: bool = False
+) -> str:
     """Why the ranks given to a ranking's items are not a ranking the question
     allows ("" when they are). ``ranks``: each item's whole-number rank, None for
     an item left unranked. Ranked items must hold 1, 2, ... with no rank given
-    twice and none skipped, and no more items than ``max_items``."""
+    twice and none skipped, and no more items than ``max_items``. With
+    ``complete``, as a repair must be, the ranking must also rank at least
+    ``min_items`` items, or every item when there is no minimum (an answer left
+    short is flagged item by item instead)."""
     given = [rank for rank in ranks if rank is not None]
     if len(set(given)) != len(given):
         return "a rank given to more than one item"
@@ -2465,6 +2471,9 @@ def ranking_problem(ranks: list[int | None], *, min_items: int | None = None, ma
         return "ranks that skip a number"
     if max_items and len(given) > max_items:
         return "more items ranked than the question allows"
+    needed = min(min_items, len(ranks)) if min_items else len(ranks)
+    if complete and len(given) < needed:
+        return "fewer items ranked than the question requires"
     return ""
 
 

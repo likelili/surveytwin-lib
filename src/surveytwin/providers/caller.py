@@ -117,13 +117,17 @@ class DefinedModelCaller:
         out_tokens = (reply.output_tokens if reply else None) or 0
         known = reply is not None and reply.input_tokens is not None and reply.output_tokens is not None
         record = UsageRecord(
-            provider=self.model.kind,
+            # the provider a built-in model calls ("anthropic", "gemini", "deepseek");
+            # for a model of your own, how it is called ("http", "openai-compatible", "function")
+            provider=self.model.builtin or self.model.kind,
             endpoint=self.model.layout or "function",
             model=self.model.name,
             resolved_model=self.model.name,
             status=status,
             input_tokens=in_tokens,
+            cached_input_tokens=(reply.cached_input_tokens if reply else None) or 0,
             output_tokens=out_tokens,
+            reasoning_tokens=(reply.reasoning_tokens if reply else None) or 0,
             total_tokens=in_tokens + out_tokens,
             latency_ms=int(meta.get("latency_ms", 0) or 0),
             request_id=reply.request_id if reply else "",
@@ -131,7 +135,7 @@ class DefinedModelCaller:
             stage=ctx.get("stage"),
             purpose=str(ctx.get("purpose", "answer")),
             error=error[:500],
-            extra={"usage_known": known, "stop_reason": meta.get("stop_reason")},
+            extra={"usage_known": known, "stop_reason": meta.get("stop_reason"), "kind": self.model.kind},
         )
         try:
             self.on_usage(record)
@@ -148,6 +152,11 @@ class DefinedModelCaller:
             except Exception as exc:
                 self._record(None, {}, "failed", str(exc))
                 raise
+            if meta.get("stopped"):
+                # a refusal, a safety stop, a blocked prompt: the call was made (and
+                # its tokens are recorded) but gave no answer to use
+                self._record(reply, meta, "stopped", str(meta["stopped"]))
+                raise RuntimeError(f"{self.model.name} gave no answer: {meta['stopped']}")
             self._record(reply, meta, "completed")
             if reply.text.strip() and not reply.cut_off:
                 return reply.text

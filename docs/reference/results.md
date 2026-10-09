@@ -18,17 +18,21 @@ import json
 import surveytwin as st
 
 def stand_in(request, unusable=()):
-    """A model for trying the library offline: the first option, 1 for a number, a short text."""
+    """A model for trying the library offline: the first option, the lowest
+    number allowed, a short text, and a ranking's items ranked 1, 2, 3, ..."""
     start = request.user.rindex("Questions JSON:\n") + len("Questions JSON:\n")
     questions = json.loads(request.user[start:request.user.index("\n\nRespond using JSON schema", start)])
-    answers = []
+    answers, ranks = [], {}
     for q in questions:
         if q["id"] in unusable:
             value = "Maybe"                  # no such option: recorded as out of range
+        elif q.get("rank_order_group_id"):
+            ranks[q["rank_order_group_id"]] = ranks.get(q["rank_order_group_id"], 0) + 1
+            value = str(ranks[q["rank_order_group_id"]])
         elif q.get("options"):
             value = q["options"][0]
         else:
-            value = "1" if q.get("type") == "numeric" else "No comment"
+            value = str(q.get("numeric_min", 1)) if q.get("type") == "numeric" else "No comment"
         answers.append({"question_id": q["id"], "answer_value": value, "answer_label": value, "answer_raw": value})
     return st.Reply(text=json.dumps({"answers": answers}), input_tokens=len(request.user) // 4, output_tokens=20 * len(answers))
 
@@ -215,7 +219,7 @@ print(results.usage_totals)
 ```
 
 ```
-{'calls': 6, 'input_tokens': 40178, 'output_tokens': 5860, 'reasoning_tokens': 0, 'total_tokens': 46038}
+{'calls': 6, 'input_tokens': 40202, 'output_tokens': 5860, 'reasoning_tokens': 0, 'total_tokens': 46062}
 ```
 
 ### `Results.summary_stats`
@@ -622,7 +626,12 @@ answer goes through the same matching as a first answer; one that still does not
 fit stays flagged. The best and worst answers of a MaxDiff task are asked with
 the rule that they differ, and a repair that names the item its pair's other
 answer names is not stored: the answer stays flagged, and a warning says how
-many such pairs there are.
+many such pairs there are. A ranking's items are asked with the rule that each
+gets a unique rank (the ranks already given count), and their repairs are stored
+only when the whole ranking then is one the question allows with no flag: no rank
+given twice or skipped, no more items ranked than allowed, and at least the
+minimum ranked (every item, when the question sets no minimum). Otherwise none of
+that ranking's repairs is stored, and a warning says how many rankings.
 
 A question is never answered without its picture. A flagged question that shows
 an image the run left out because it could not be loaded, an image the provider

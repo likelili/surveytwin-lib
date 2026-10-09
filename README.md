@@ -15,8 +15,10 @@ back the same files a Qualtrics export has (labels, coded values, a long table),
 one text file of answers per twin, what each twin was shown in conjoint and
 MaxDiff tasks, and a validation report.
 
-Runs are reproducible: the same survey, personas, seed and model give the same
-prompts and the same export files.
+The design of a run is reproducible: the same survey, personas, seed and
+settings give the same twins, the same random draws and the same first prompts.
+Model replies can vary from call to call, so answers, later stages that depend
+on them, and the export files can differ between runs.
 
 > **Status:** version 0.1, pre-release. The default persona bank (Twin-2K-500 in
 > the Croissant Twins format) is not published for download yet; see
@@ -734,20 +736,24 @@ which the prompt asks for and the library reads.
 gpt = st.Model.openai("gpt-5.4", reasoning_effort="low")       # OPENAI_API_KEY
 routed = st.Model.openrouter("gpt-5.4-low")                    # OPENROUTER_API_KEY
 claude = st.Model.anthropic("claude-opus-5-5", effort="low")   # ANTHROPIC_API_KEY
-gemini = st.Model.gemini("gemini-2.5-pro")                     # GEMINI_API_KEY
-deepseek = st.Model.deepseek("deepseek-chat")                  # DEEPSEEK_API_KEY
+gemini = st.Model.gemini("gemini-3.1-pro-preview")             # GEMINI_API_KEY
+deepseek = st.Model.deepseek("deepseek-flash")                 # DEEPSEEK_API_KEY
 
 config = st.configure(..., model=claude)
 config = st.configure(..., model="gpt-5.6-luna-medium")        # a preset name: the same as Model.openai(name)
 ```
 
-OpenAI models are called this way: the Responses API for GPT-5
-models (with a reasoning allowance) and for any call with images, chat
-completions in JSON mode otherwise. A preset name such as `gpt-5.4-low` fixes the
-API model and its reasoning effort. A failed OpenAI call goes to OpenRouter only
-with `Model.openai(..., fallback_to_openrouter=True)`, and the run then says how
-many calls did. Current Claude models think before answering and take no
-temperature, so none is sent.
+OpenAI models are called this way: the Responses API for reasoning
+models (GPT-5 and later, and the o-series, with a reasoning allowance) and for
+any call with images, chat completions in JSON mode otherwise. A preset name such
+as `gpt-5.4-low` fixes the API model and its reasoning effort. A failed OpenAI
+call goes to OpenRouter only with `Model.openai(..., fallback_to_openrouter=True)`,
+and the run then says how many calls did. Current Claude, Gemini and DeepSeek
+models think before answering, from the same output limit as the answer, so
+each call gets room for the thinking (`thinking_room`, set from the effort).
+Current Claude models refuse a temperature and Gemini 3 models should keep
+their default, so none is sent to either. A refusal or a safety stop is not an
+answer: the call fails with the reason, and the run asks again.
 
 **Models of your own** send the same content to any endpoint in one of four
 request layouts (`openai-chat`, `openai-responses`, `anthropic`, `gemini`), or
@@ -787,7 +793,8 @@ model receives a `ModelRequest` and returns a string or a `Reply`.
   call is made.
 - Keys are never written into results, saved runs or logs: settings show the
   variable's name only, and a request field named like a secret (`api_key`,
-  `token`, ...) shows as `<hidden>`. The library does not read `.env` files;
+  `access_token`, `credentials`, ...) shows as `<hidden>`, with everything
+  inside it. The library does not read `.env` files;
   load one yourself (for example with `python-dotenv`) if you keep keys there.
 - A run stops before its first call when a model's key variable is not set.
 

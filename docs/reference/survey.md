@@ -125,8 +125,10 @@ variable read but never set, a block the flow never shows) are in
 **Raises**
 
 - `SurveyFormatError`: the definition has errors; `findings` lists every one with
-  the path of its field. A picture file that is missing, is not a PNG, JPEG,
-  WEBP or GIF picture, or is larger than 20 MB is one (code `picture.file`).
+  the path of its field. A picture file that is missing or cannot be read, is
+  not a PNG, JPEG, WEBP or GIF picture, is larger than 20 MB, or is damaged or
+  cut off is one (code `picture.file`); so is a `data:` address that does not
+  hold such a picture (code `picture.data`).
 - `SurveyError`: the file does not exist or is not JSON, or it is a Qualtrics
   export (read it with `read_qsf`).
 - `DraftError` (`survey.no_answerable`): the survey has no question a twin can

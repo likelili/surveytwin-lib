@@ -643,7 +643,8 @@ class Results:
         if outcome.get("broken_rankings"):
             warnings.append(
                 f"{outcome['broken_rankings']} ranking(s) were still not a valid ranking when asked again (a rank "
-                "given twice or skipped); those repairs were not stored and the answers stay flagged."
+                "given twice or skipped, or fewer items ranked than the question requires); those repairs were not "
+                "stored and the answers stay flagged."
             )
         from ..answers.repair_marks import shaped_by_repaired
 

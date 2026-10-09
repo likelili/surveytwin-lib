@@ -10,8 +10,9 @@ calls a model.
 
 The examples on this page run without a key or a network: a small Python
 function stands in for the model. It reads the questions from the prompt and
-picks the first option of each, or 5 where there are no options. A real model
-reads the whole prompt instead. Later examples continue from this one.
+picks the first option of each, or 5 where there are no options, and ranks a
+ranking's items 1, 2, 3, ... in the order asked. A real model reads the whole
+prompt instead. Later examples continue from this one.
 
 ```python
 import json
@@ -23,10 +24,16 @@ def questions_in(request: st.ModelRequest) -> list[dict]:
     return json.loads(listed)
 
 def first_option(request: st.ModelRequest) -> st.Reply:
-    """A stand-in for a real model: each question gets its first option, or 5."""
-    answers = []
+    """A stand-in for a real model: each question gets its first option, or 5;
+    a ranking's items get 1, 2, 3, ..."""
+    answers, ranks = [], {}
     for question in questions_in(request):
-        value = (question.get("options") or ["5"])[0]
+        group = question.get("rank_order_group_id")
+        if group:
+            ranks[group] = ranks.get(group, 0) + 1
+            value = str(ranks[group])
+        else:
+            value = (question.get("options") or ["5"])[0]
         answers.append({"question_id": question["id"], "answer_value": value, "answer_label": value, "answer_raw": value})
     return st.Reply(text=json.dumps({"answers": answers}), input_tokens=len(request.user) // 4, output_tokens=40)
 
@@ -439,24 +446,24 @@ and computes no cost.
 
 | Name | Type | Meaning |
 |---|---|---|
-| `provider` | `str` | Who answered. For a preset, the provider actually called: `"openai"` or `"openrouter"` (an OpenRouter fallback shows `"openrouter"`). For a defined model, its kind: `"http"`, `"openai-compatible"` or `"function"`. |
+| `provider` | `str` | Who answered. For a preset, the provider actually called: `"openai"` or `"openrouter"` (an OpenRouter fallback shows `"openrouter"`). For a built-in Claude, Gemini or DeepSeek model, `"anthropic"`, `"gemini"` or `"deepseek"`. For a model of your own, its kind: `"http"`, `"openai-compatible"` or `"function"`. |
 | `endpoint` | `str` | For a preset, `"responses"` or `"chat_completions"`. For a defined model, its request layout, or `"function"`. |
 | `model` | `str` | The model's name as you gave it (`Model.name`). |
 | `resolved_model` | `str` | The model name sent to the API: for a preset, the API model (`gpt-5.4` for `gpt-5.4-medium`; `openai/gpt-5.4` through OpenRouter). For a defined model, its name. |
-| `status` | `str` | `"completed"`, or `"failed"` for a call that ended in an error. (A preset call that gets no reply at all, such as on a network error, makes no record.) |
+| `status` | `str` | `"completed"`; `"failed"` for a call that ended in an error; `"stopped"` for a call the provider answered without an answer to use (a refusal, a safety stop, a blocked prompt), whose tokens still count. (A preset call that gets no reply at all, such as on a network error, makes no record.) |
 | `input_tokens` | `int` | Input tokens, as reported; `0` when the reply gave none. |
-| `cached_input_tokens` | `int` | The part of the input the provider read from its cache. Presets only; `0` for defined models. |
+| `cached_input_tokens` | `int` | The part of the input the provider read from its cache, when it reports it (presets, Claude, Gemini, DeepSeek, and the layouts' usual fields); `0` otherwise. |
 | `output_tokens` | `int` | Output tokens, as reported; `0` when the reply gave none. |
-| `reasoning_tokens` | `int` | The part of the output spent on reasoning, when the provider reports it. Presets only; `0` for defined models. |
+| `reasoning_tokens` | `int` | The part of the output spent on reasoning (thinking), when the provider reports it; `0` otherwise. |
 | `total_tokens` | `int` | The provider's total, or input plus output. |
 | `latency_ms` | `int` | How long the call took, in milliseconds; `0` for a batch line. |
 | `request_id` | `str` | The provider's ID for the request, when it gave one. |
 | `twin_id` | `str` | The twin the call was for. |
 | `stage` | `int \| None` | The stage, counted from 1, in a staged run; `None` in a static run. |
-| `purpose` | `str` | `"answer"` for a run's calls; `"rerun"` for `results.rerun_flagged()`; `"survey_draft.generate"` and `"survey_draft.refine"` for the builder's drafting calls. |
+| `purpose` | `str` | `"answer"` for a run's calls; `"rerun"` for `results.rerun_flagged()`. |
 | `batch` | `bool` | `True` for a line read from an OpenAI batch. |
 | `error` | `str` | For a failed call, the error message (its first 500 characters). |
-| `extra` | `dict[str, Any]` | For a defined model, `usage_known` (`False` when the reply gave no token counts, so the counts above are 0) and `stop_reason` (as read from the reply). Empty for presets. |
+| `extra` | `dict[str, Any]` | For a defined model, `usage_known` (`False` when the reply gave no token counts, so the counts above are 0), `stop_reason` (as read from the reply) and `kind` (the model's `kind`). Empty for presets. |
 
 ### `UsageRecord.to_dict`
 
@@ -483,9 +490,9 @@ print(results.usage_totals)
 
 ```
 [('ex-04', 1), ('ex-04', 2), ('ex-05', 1), ('ex-05', 2), ('ex-08', 1), ('ex-08', 2)]
-function function first-option completed 40 {'usage_known': True, 'stop_reason': None}
+function function first-option completed 40 {'usage_known': True, 'stop_reason': None, 'kind': 'function'}
 True
-{'calls': 6, 'input_tokens': 40069, 'output_tokens': 240, 'reasoning_tokens': 0, 'total_tokens': 40309}
+{'calls': 6, 'input_tokens': 40093, 'output_tokens': 240, 'reasoning_tokens': 0, 'total_tokens': 40333}
 ```
 
 ## Progress

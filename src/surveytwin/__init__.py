@@ -1,7 +1,10 @@
-"""surveytwin: run a Qualtrics survey on digital twins and get Qualtrics-format data back.
+"""surveytwin: run a survey on digital twins and get the data back in the layout of a Qualtrics export.
+
+A survey is written in the standard survey format (read_survey), read from a
+Qualtrics export (read_qsf), or built in Python (new_survey, Survey.add_question).
 
     import surveytwin as st
-    survey = st.read_qsf("study.qsf")
+    survey = st.read_survey("study.json")      # or st.read_qsf("study.qsf")
     config = st.configure(sample_size=50, seed=7, model="gpt-5.6-luna-medium")
     plan = st.plan(survey, config)
     print(plan.preview_prompt())

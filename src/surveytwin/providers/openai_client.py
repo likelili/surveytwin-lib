@@ -141,10 +141,18 @@ class OpenAIClient:
             return f"openai/{model_name}"
         return model_name
 
-    @staticmethod
-    def _is_gpt5_model(model_name: str) -> bool:
-        # OpenRouter names the same models "openai/gpt-5..."
-        return model_name.rsplit("/", 1)[-1].startswith("gpt-5")
+    # OpenAI's reasoning models: GPT-5 and every later GPT, and the o-series. They
+    # are called through the Responses API and take a reasoning effort instead of a
+    # temperature (OpenAI's reasoning guide).
+    _REASONING_MODEL = re.compile(r"^(gpt-([5-9]|\d{2,})|o[1-9])(\b|[.-])")
+
+    @classmethod
+    def _is_gpt5_model(cls, model_name: str) -> bool:
+        """A reasoning model (GPT-5 and later, or o-series); OpenRouter names the
+        same models "openai/gpt-5...". Fine-tuned names ("ft:gpt-5...") count too."""
+        name = model_name.rsplit("/", 1)[-1]
+        name = name[3:] if name.startswith("ft:") else name
+        return bool(cls._REASONING_MODEL.match(name))
 
     @staticmethod
     def _normalize_reasoning_effort(model_name: str, reasoning_effort: str | None) -> str | None:
@@ -401,6 +409,9 @@ class OpenAIClient:
         reasoning_effort: str | None,
         messages: list[dict[str, Any]] | None = None,
     ) -> str:
+        # OpenAI's own endpoint names the limit max_completion_tokens (max_tokens is
+        # deprecated there and refused by reasoning models); OpenRouter's, max_tokens.
+        limit_key = "max_completion_tokens" if provider == "openai" else "max_tokens"
         payload: dict[str, Any] = {
             "model": model_name,
             "messages": messages
@@ -408,17 +419,20 @@ class OpenAIClient:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            "max_tokens": max_tokens,
+            limit_key: max_tokens,
         }
-        # Older GPT-5 snapshots reject temperature/top_p unless effort is none.
+        # Reasoning models reject temperature/top_p unless effort is none.
         if not self._is_gpt5_model(model_name):
             payload["temperature"] = temperature
         else:
             normalized_effort = self._normalize_reasoning_effort(model_name, reasoning_effort)
             if normalized_effort:
-                payload["reasoning"] = {"effort": normalized_effort}
+                if provider == "openai":
+                    payload["reasoning_effort"] = normalized_effort
+                else:
+                    payload["reasoning"] = {"effort": normalized_effort}  # OpenRouter's form
             # room for the reasoning too, as a call to OpenAI's Responses API has
-            payload["max_tokens"] = max_tokens + self._reasoning_token_allowance(model_name, normalized_effort)
+            payload[limit_key] = max_tokens + self._reasoning_token_allowance(model_name, normalized_effort)
         if response_format is not None:
             payload["response_format"] = response_format
         base = self.openrouter_base_url if provider == "openrouter" else self.openai_base_url
@@ -685,7 +699,7 @@ class OpenAIClient:
             if normalized_effort:
                 body["reasoning_effort"] = normalized_effort
         else:
-            body["max_tokens"] = max_tokens
+            body["max_completion_tokens"] = max_tokens  # (max_tokens is deprecated on OpenAI's endpoint)
             body["temperature"] = temperature
         if response_format is not None:
             body["response_format"] = response_format

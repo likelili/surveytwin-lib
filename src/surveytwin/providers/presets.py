@@ -141,4 +141,5 @@ _REASONING_TOKEN_ALLOWANCES: dict[str, int] = {
     "medium": 8000,
     "high": 16000,
     "xhigh": 24000,
+    "max": 32000,
 }

@@ -7,6 +7,7 @@ impossible design is refused before anything runs; best and worst must differ.
 
 from __future__ import annotations
 
+import base64
 import copy
 import csv
 import json
@@ -384,8 +385,13 @@ def test_a_level_picture_is_sent_in_its_cell():
     data = copy.deepcopy(COFFEE)
     block = next(b for b in data["blocks"] if b["kind"] == "conjoint")
     brand = next(a for a in block["attributes"] if a["id"] == "brand")
+    png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAE0lEQVR4nGM8ISfHAANMcBY6BwAm2gEKUjNC5gAAAABJRU5ErkJggg==")
+    level_pictures = {  # a picture per level, told apart by bytes after its end
+        level["id"]: "data:image/png;base64," + base64.b64encode(png + level["id"].encode()).decode("ascii")
+        for level in brand["levels"]
+    }
     for level in brand["levels"]:
-        level["media"] = [{"source": f"data:image/png;base64,{level['id']}"}]
+        level["media"] = [{"source": level_pictures[level["id"]]}]
     requests = []
 
     def reply(request: st.ModelRequest) -> st.Reply:
@@ -400,7 +406,7 @@ def test_a_level_picture_is_sent_in_its_cell():
         before = parts[n - 1]["text"]
         label = before[before.rindex("[Image "):]
         brand_shown = label.split("Title: ")[1].split(",")[0]
-        assert parts[n]["url"].endswith(next(lv["id"] for lv in brand["levels"] if lv["label"] == brand_shown))
+        assert parts[n]["url"] == level_pictures[next(lv["id"] for lv in brand["levels"] if lv["label"] == brand_shown)]
         assert before[: before.rindex("[Image ")].rstrip().endswith(f"| {brand_shown}")
         assert parts[n + 1]["text"].startswith(" |")
 

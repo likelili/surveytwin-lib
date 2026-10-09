@@ -19,7 +19,7 @@ from fakes import answer_questions
 
 BANK = str(TESTS.parent / "examples" / "example-bank")
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")
-GIF = b"GIF89a\x01\x00\x01\x00\x00\x00\x00;"
+GIF = base64.b64decode("R0lGODdhBAADAIEAAMgeHgAAAAAAAAAAACwAAAAABAADAAAICAABCBxIUGBAADs=")  # a 4x3 GIF
 
 
 def survey_data(source: str, option_picture: str | None = None) -> dict:

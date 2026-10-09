@@ -99,3 +99,20 @@ def test_a_repair_that_is_still_not_a_ranking_is_not_stored():
     fixed = results.rerun_flagged(model=ranking({"a": "1", "b": "1", "c": "3"}))
     assert len(fixed.flagged()) == 3 and not any(a.repair for a in fixed.answers)
     assert any("ranking(s) were still not a valid ranking" in w for w in fixed.warnings)
+
+
+def test_a_repair_must_rank_as_many_items_as_the_question_requires():
+    # the reviewer's case: at least two items must be ranked, and the rerun ranks one
+    results = run(ranking_survey(min_ranked=2), {"a": "1", "b": "1", "c": "2"})
+    fixed = results.rerun_flagged(model=ranking({"a": "1"}))
+    assert not any(a.repair for a in fixed.answers) and len(fixed.flagged()) == 3
+    assert any("ranking(s) were still not a valid ranking" in w for w in fixed.warnings)
+    # ranking two items is enough
+    enough = results.rerun_flagged(model=ranking({"a": "2", "b": "1"}))
+    assert {a.question_id: (a.repair or {}).get("value") for a in enough.answers} == {"rank_a": "2", "rank_b": "1", "rank_c": None}
+
+
+def test_without_a_minimum_a_repair_ranks_every_item():
+    results = run(ranking_survey(), {"a": "1", "b": "1", "c": "2"})
+    fixed = results.rerun_flagged(model=ranking({"a": "2", "b": "1"}))  # c left unranked
+    assert not any(a.repair for a in fixed.answers)
