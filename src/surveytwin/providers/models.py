@@ -1,7 +1,14 @@
-"""Model objects: the named presets and models the caller defines.
+"""Model objects: every model a run can call, each with the code that calls it.
 
-A preset goes through the website's OpenAI/OpenRouter client unchanged. A
-defined model is one of:
+Built in (the request and reply formats of the main APIs are written here):
+
+* ``Model.openai(...)`` and ``Model.openrouter(...)``: OpenAI models
+  (``Model.preset(name)`` and ``model="gpt-5.4-low"`` are the same thing by name).
+* ``Model.anthropic(...)``: Claude, through Anthropic's Messages API.
+* ``Model.gemini(...)``: Gemini, through Google's generateContent API.
+* ``Model.deepseek(...)``: DeepSeek, through its OpenAI-compatible API.
+
+Defined by the caller:
 
 * ``Model.openai_compatible(...)``: any endpoint that speaks OpenAI's chat format.
 * ``Model.http(...)``: an address plus one of four request layouts
@@ -9,6 +16,9 @@ defined model is one of:
   knows where its API puts the reply text, token usage and stop reason; key
   paths override them when a gateway reshapes the reply.
 * ``Model.from_function(fn)``: a Python function that makes the call.
+
+Every model takes a ``ModelRequest`` and gives back a ``Reply`` (``acall``,
+``ask``); a key is read from the environment when a call is made, never stored.
 """
 
 from __future__ import annotations
@@ -74,13 +84,20 @@ def _unset_env(value: Any) -> list[str]:
     return []
 
 
-def _redact(value: Any) -> Any:
+# Body fields whose value is a secret by its name: never recorded, even when
+# written as plain text (use env("NAME") instead).
+_SECRET_NAME = re.compile(r"(api[_-]?key|apikey|secret|token|password|passwd|authorization|credential)", re.IGNORECASE)
+
+
+def _redact(value: Any, key: str = "") -> Any:
     if isinstance(value, env):
         return f"<env {value.name}>"
+    if key and _SECRET_NAME.search(key) and isinstance(value, (str, int, float)) and not isinstance(value, bool):
+        return "<hidden>"
     if isinstance(value, dict):
-        return {k: _redact(v) for k, v in value.items()}
+        return {k: _redact(v, str(k)) for k, v in value.items()}
     if isinstance(value, list):
-        return [_redact(v) for v in value]
+        return [_redact(v, key) for v in value]
     return value
 
 
@@ -220,11 +237,12 @@ async def build_layout_body(layout: str, request: ModelRequest, client: httpx.As
                 )
             else:
                 content.append({"type": "image", "source": {"type": "url", "url": part["url"]}})
+        # No temperature: current Claude models refuse one (Model.anthropic adds it
+        # when given, for an older model).
         return {
             "system": request.system,
             "messages": [{"role": "user", "content": content}],
             "max_tokens": request.max_output_tokens,
-            "temperature": request.temperature,
         }
     if layout == "gemini":
         parts: list[dict[str, Any]] = []
@@ -310,16 +328,131 @@ class Model:
     # Where the model was defined, when the command line loaded it from a file:
     # "FILE.py:NAME (sha256 <first 12>)". The file name only, never its folder.
     source: str = ""
+    # A built-in model ("openai", "openrouter", "anthropic", "gemini", "deepseek"):
+    # its settings are enough to make it again (Model.from_settings).
+    builtin: str = ""
+    # The environment variable that holds the key, and for a model called over
+    # HTTP the header a key given to run(api_key=...) goes in, with its prefix.
+    api_key_env: str | None = None
+    key_header: str | None = None
+    key_prefix: str = ""
+    # OpenAI and OpenRouter models: a reasoning effort other than the preset's own,
+    # and whether a failed OpenAI call is tried again through OpenRouter.
+    reasoning_effort: str | None = None
+    fallback_to_openrouter: bool = False
 
     # ---- constructors ---------------------------------------------------------------
 
     @classmethod
     def preset(cls, name: str, *, provider: str = "openai") -> "Model":
-        """A named preset from the website, or any OpenAI model name."""
+        """A named preset, or any OpenAI model name: the same as
+        ``Model.openai(name)`` (or ``Model.openrouter(name)``)."""
         provider = str(provider or "openai").strip().lower()
         if provider not in {"openai", "openrouter"}:
             raise ConfigError("provider must be 'openai' or 'openrouter' for a preset model")
-        return cls(name=str(name), kind="preset", layout=None, images=True, provider=provider)
+        return cls.openrouter(name) if provider == "openrouter" else cls.openai(name)
+
+    @classmethod
+    def openai(
+        cls,
+        name: str,
+        *,
+        reasoning_effort: str | None = None,
+        api_key_env: str = "OPENAI_API_KEY",
+        fallback_to_openrouter: bool = False,
+    ) -> "Model":
+        """An OpenAI model: a preset name (``gpt-5.4-low`` pins the API model and
+        its reasoning effort) or any OpenAI model name, fine-tuned ones included.
+        Called through the Responses API for GPT-5 models and for any call with
+        images, chat completions in JSON mode otherwise.
+        ``reasoning_effort`` replaces the preset's own effort. A failed call is
+        tried again through OpenRouter only with ``fallback_to_openrouter=True``
+        (and ``OPENROUTER_API_KEY`` set); the run then warns how many calls went
+        there."""
+        return cls(
+            name=str(name), kind="preset", layout=None, images=True, provider="openai", builtin="openai",
+            api_key_env=str(api_key_env), reasoning_effort=_effort(reasoning_effort), fallback_to_openrouter=bool(fallback_to_openrouter),
+        )
+
+    @classmethod
+    def openrouter(cls, name: str, *, reasoning_effort: str | None = None, api_key_env: str = "OPENROUTER_API_KEY") -> "Model":
+        """An OpenAI model through OpenRouter (``openai/<model>``), by preset or
+        model name, called as ``Model.openai`` would be; a GPT-5 model keeps its
+        reasoning effort, and images go with the call."""
+        return cls(
+            name=str(name), kind="preset", layout=None, images=True, provider="openrouter", builtin="openrouter",
+            api_key_env=str(api_key_env), reasoning_effort=_effort(reasoning_effort),
+        )
+
+    @classmethod
+    def anthropic(
+        cls,
+        name: str,
+        *,
+        api_key_env: str = "ANTHROPIC_API_KEY",
+        effort: str | None = None,
+        temperature: float | None = None,
+        body: dict[str, Any] | None = None,
+        images: bool = True,
+        url: str = "https://api.anthropic.com/v1/messages",
+        timeout_s: float = 600.0,
+    ) -> "Model":
+        """A Claude model (such as ``claude-opus-5-5``) through Anthropic's Messages
+        API. ``effort`` sets ``output_config.effort``; current Claude models think
+        on their own and take no ``temperature``, so it is sent only when given
+        (for an older model that accepts it). ``body`` adds request fields."""
+        extra: dict[str, Any] = {"model": str(name)}
+        if effort:
+            extra["output_config"] = {"effort": str(effort)}
+        if temperature is not None:
+            extra["temperature"] = float(temperature)
+        model = cls.http(
+            name, url, layout="anthropic", images=images, timeout_s=timeout_s,
+            headers={"x-api-key": env(api_key_env), "anthropic-version": "2023-06-01"},
+            body=_merge_body(extra, body),
+        )
+        model.builtin, model.provider, model.api_key_env, model.key_header = "anthropic", "anthropic", str(api_key_env), "x-api-key"
+        return model
+
+    @classmethod
+    def gemini(
+        cls,
+        name: str,
+        *,
+        api_key_env: str = "GEMINI_API_KEY",
+        temperature: float | None = None,
+        body: dict[str, Any] | None = None,
+        images: bool = True,
+        timeout_s: float = 600.0,
+    ) -> "Model":
+        """A Gemini model (such as ``gemini-2.5-pro``) through Google's
+        generateContent API; pictures are sent inside the request."""
+        extra: dict[str, Any] = {"generationConfig": {"temperature": float(temperature)}} if temperature is not None else {}
+        model = cls.http(
+            name,
+            f"https://generativelanguage.googleapis.com/v1beta/models/{name}:generateContent",
+            layout="gemini", images=images, timeout_s=timeout_s,
+            headers={"x-goog-api-key": env(api_key_env)},
+            body=_merge_body(extra, body),
+        )
+        model.builtin, model.provider, model.api_key_env, model.key_header = "gemini", "gemini", str(api_key_env), "x-goog-api-key"
+        return model
+
+    @classmethod
+    def deepseek(
+        cls,
+        name: str = "deepseek-chat",
+        *,
+        api_key_env: str = "DEEPSEEK_API_KEY",
+        base_url: str = "https://api.deepseek.com",
+        body: dict[str, Any] | None = None,
+        images: bool = False,
+    ) -> "Model":
+        """A DeepSeek model through its OpenAI-compatible API. Its chat models take
+        text only, so a survey with pictures is refused unless ``images=True``."""
+        model = cls.openai_compatible(name, base_url, api_key_env=api_key_env, model=name, body=body, images=images)
+        model.builtin, model.provider = "deepseek", "deepseek"
+        return model
 
     @classmethod
     def http(
@@ -383,6 +516,8 @@ class Model:
             images=images,
         )
         instance.kind = "openai-compatible"
+        if api_key_env:
+            instance.api_key_env, instance.key_header, instance.key_prefix = str(api_key_env), "Authorization", "Bearer "
         return instance
 
     @classmethod
@@ -411,10 +546,18 @@ class Model:
                 {
                     "provider": self.provider,
                     "api_model": spec.get("model_name", self.name),
-                    "reasoning_effort": spec.get("default_reasoning_effort"),
+                    "reasoning_effort": self.reasoning_effort or spec.get("default_reasoning_effort"),
+                    "api_key_env": self.api_key_env,
                 }
             )
+            if self.reasoning_effort:
+                out["reasoning_effort_set"] = True
+            if self.fallback_to_openrouter:
+                out["fallback_to_openrouter"] = True
             return out
+        if self.builtin:
+            out["builtin"] = self.builtin
+            out["api_key_env"] = self.api_key_env
         if self.layout:
             out["layout"] = self.layout
         if self.url:
@@ -435,8 +578,58 @@ class Model:
 
     # ---- calling a defined model -------------------------------------------------------
 
-    async def acall(self, request: ModelRequest, *, client: httpx.AsyncClient) -> tuple[Reply, dict[str, Any]]:
-        """Call a defined model once. Returns the reply and a usage summary."""
+    def openai_client(self, *, api_key: str | None = None, on_usage: Callable[[UsageRecord], None] | None = None) -> Any:
+        """The OpenAI client an OpenAI or OpenRouter model calls through, with its
+        key (``api_key``, else the model's environment variable); OpenRouter's key
+        is attached for a fallback only when the model asks for one."""
+        from .openai_client import OpenAIClient
+
+        if self.kind != "preset":
+            raise ConfigError(f"Model {self.name!r} is not an OpenAI or OpenRouter model")
+        key = api_key or os.environ.get(str(self.api_key_env or ""), "")
+        if self.provider == "openrouter":
+            return OpenAIClient(openrouter_api_key=key, on_usage=on_usage)
+        fallback = os.environ.get("OPENROUTER_API_KEY", "") if self.fallback_to_openrouter else ""
+        return OpenAIClient(openai_api_key=key, openrouter_api_key=fallback, on_usage=on_usage)
+
+    async def _acall_openai(self, request: ModelRequest, *, api_key: str | None = None) -> tuple[Reply, dict[str, Any]]:
+        """One call of an OpenAI or OpenRouter model, as a run makes it."""
+        records: list[UsageRecord] = []
+        client = self.openai_client(api_key=api_key, on_usage=records.append)
+        started = time.monotonic()
+        try:
+            if request.images:
+                parts = [
+                    {"type": "input_text", "text": part["text"]} if part["type"] == "text" else {"type": "input_image", "image_url": part["url"]}
+                    for part in request.content
+                ]
+                items = [{"role": "system", "content": [{"type": "input_text", "text": request.system}]}, {"role": "user", "content": parts}]
+                text = await client.responses_input_text(
+                    model=self.name, input_items=items, max_tokens=request.max_output_tokens, reasoning_effort=self.reasoning_effort
+                )
+            else:
+                text = await client.chat_text(
+                    self.name, request.system, request.user, temperature=request.temperature, max_tokens=request.max_output_tokens,
+                    response_format={"type": "json_object"} if request.json_mode else None, reasoning_effort=self.reasoning_effort,
+                )
+        finally:
+            await client.close()
+        done = [r for r in records if r.status == "completed"]
+        reply = Reply(
+            text=str(text or ""),
+            input_tokens=sum(r.input_tokens for r in done) if done else None,
+            output_tokens=sum(r.output_tokens for r in done) if done else None,
+            request_id=done[-1].request_id if done else "",
+        )
+        providers = sorted({r.provider for r in done})
+        return reply, {"latency_ms": int((time.monotonic() - started) * 1000), "status": "completed", "providers": providers}
+
+    async def acall(self, request: ModelRequest, *, client: httpx.AsyncClient, api_key: str | None = None) -> tuple[Reply, dict[str, Any]]:
+        """Call the model once. Returns the reply and a usage summary. ``api_key``
+        replaces the key the model reads from the environment (a built-in model's,
+        or one made with ``openai_compatible(api_key_env=...)``)."""
+        if self.kind == "preset":
+            return await self._acall_openai(request, api_key=api_key)
         if self.kind == "function":
             assert self.function is not None
             started = time.monotonic()
@@ -449,7 +642,10 @@ class Model:
         if self.kind not in {"http", "openai-compatible"} or not self.layout or not self.url:
             raise ConfigError(f"Model {self.name!r} cannot be called directly")
         body = _merge_body(await build_layout_body(self.layout, request, client), _resolve_secrets(self.body))
-        headers = {"Content-Type": "application/json", **{k: str(v) for k, v in _resolve_secrets(self.headers).items()}}
+        sent_headers = dict(self.headers)
+        if api_key and self.key_header:
+            sent_headers[self.key_header] = f"{self.key_prefix}{api_key}"
+        headers = {"Content-Type": "application/json", **{k: str(v) for k, v in _resolve_secrets(sent_headers).items()}}
         started = time.monotonic()
         response = await client.post(self.url, headers=headers, json=body, timeout=self.timeout_s)
         latency_ms = int((time.monotonic() - started) * 1000)
@@ -480,6 +676,53 @@ class Model:
         )
         return reply, {"latency_ms": latency_ms, "status": "completed", "stop_reason": stop}
 
+    # ---- asking a model directly -------------------------------------------------
+
+    async def aask(
+        self,
+        prompt: str,
+        *,
+        system: str = "",
+        images: list[str] | tuple[str, ...] = (),
+        json: bool = False,
+        max_output_tokens: int = 2000,
+        api_key: str | None = None,
+    ) -> Reply:
+        """Ask the model one thing, outside a run: ``prompt`` and optional
+        ``images`` (web links, ``data:`` addresses, or picture files), in the same
+        request shape a run sends. Returns the ``Reply``."""
+        from ..spec.pictures import picture_file_address
+
+        pictures = [picture_file_address(str(image)) for image in images]
+        request = ModelRequest(
+            system=str(system),
+            user=str(prompt),
+            content=[{"type": "text", "text": str(prompt)}, *({"type": "image", "url": url} for url in pictures)],
+            images=pictures,
+            max_output_tokens=int(max_output_tokens),
+            json_mode=bool(json),
+        )
+        if pictures and not self.images:
+            raise ConfigError(f"Model {self.name!r} takes no image input")
+        async with httpx.AsyncClient() as http:
+            reply, _meta = await self.acall(request, client=http, api_key=api_key)
+        return reply
+
+    def ask(
+        self,
+        prompt: str,
+        *,
+        system: str = "",
+        images: list[str] | tuple[str, ...] = (),
+        json: bool = False,
+        max_output_tokens: int = 2000,
+        api_key: str | None = None,
+    ) -> Reply:
+        """``aask`` for code that is not async (it runs its own event loop)."""
+        return asyncio.run(
+            self.aask(prompt, system=system, images=images, json=json, max_output_tokens=max_output_tokens, api_key=api_key)
+        )
+
     # ---- checking a model ---------------------------------------------------------
 
     async def acheck(self, *, api_key: str | None = None) -> ModelCheck:
@@ -493,16 +736,13 @@ class Model:
         )
         started = time.monotonic()
         if self.kind == "preset":
-            from .openai_client import OpenAIClient
-
             records: list[UsageRecord] = []
-            client = OpenAIClient(
-                openai_api_key=(api_key or os.environ.get("OPENAI_API_KEY", "")) if self.provider == "openai" else "",
-                openrouter_api_key=(api_key or os.environ.get("OPENROUTER_API_KEY", "")) if self.provider == "openrouter" else "",
-                on_usage=records.append,
-            )
+            client = self.openai_client(api_key=api_key, on_usage=records.append)
             try:
-                text = await client.chat_text(self.name, request.system, request.user, max_tokens=512, response_format={"type": "json_object"})
+                text = await client.chat_text(
+                    self.name, request.system, request.user, max_tokens=512, response_format={"type": "json_object"},
+                    reasoning_effort=self.reasoning_effort,
+                )
                 return ModelCheck(
                     ok=bool(text.strip()),
                     text_found=bool(text.strip()),
@@ -517,7 +757,7 @@ class Model:
                 await client.close()
         async with httpx.AsyncClient() as http:
             try:
-                reply, meta = await self.acall(request, client=http)
+                reply, meta = await self.acall(request, client=http, api_key=api_key)
             except Exception as exc:  # noqa: BLE001
                 raise ProviderError(f"Model check failed for {self.name}: {exc}") from exc
         text_found = bool(reply.text.strip())
@@ -531,14 +771,61 @@ class Model:
         )
 
     def missing_env(self) -> list[str]:
-        """The environment variables this model's ``env(...)`` placeholders need
-        that are not set now (a defined model's keys); empty when every one is
-        set, and for presets and function models."""
-        return list(dict.fromkeys(_unset_env(self.headers) + _unset_env(self.body)))
+        """The environment variables this model needs that are not set now: an
+        OpenAI or OpenRouter model's key variable, and every ``env(...)``
+        placeholder of a model called over HTTP. Empty for a function model."""
+        missing = _unset_env(self.headers) + _unset_env(self.body)
+        if self.kind == "preset" and self.api_key_env and not os.environ.get(self.api_key_env, "").strip():
+            missing.insert(0, self.api_key_env)
+        return list(dict.fromkeys(missing))
+
+    @classmethod
+    def from_settings(cls, settings: dict[str, Any]) -> "Model | None":
+        """A built-in model made again from the settings a run recorded
+        (``Model.settings``); None for a model only its definition can make (an
+        HTTP model of your own, a function)."""
+        if not isinstance(settings, dict):
+            return None
+        kind, builtin, name = settings.get("kind"), settings.get("builtin"), str(settings.get("name") or "")
+        if kind == "preset":
+            effort = settings.get("reasoning_effort") if settings.get("reasoning_effort_set") else None
+            if settings.get("provider") == "openrouter":
+                return cls.openrouter(name, reasoning_effort=effort, api_key_env=str(settings.get("api_key_env") or "OPENROUTER_API_KEY"))
+            return cls.openai(
+                name, reasoning_effort=effort, api_key_env=str(settings.get("api_key_env") or "OPENAI_API_KEY"),
+                fallback_to_openrouter=bool(settings.get("fallback_to_openrouter")),
+            )
+        key_env = settings.get("api_key_env")
+        if builtin == "anthropic":
+            body = dict(settings.get("body") or {})
+            return cls.anthropic(
+                name, api_key_env=str(key_env), effort=(body.get("output_config") or {}).get("effort"),
+                temperature=body.get("temperature"), images=bool(settings.get("images", True)),
+                url=str(settings.get("url") or "https://api.anthropic.com/v1/messages"),
+                body={k: v for k, v in body.items() if k not in {"model", "output_config", "temperature"}} or None,
+            )
+        if builtin == "gemini":
+            body = dict(settings.get("body") or {})
+            temperature = (body.get("generationConfig") or {}).get("temperature")
+            rest = copy.deepcopy(body)
+            (rest.get("generationConfig") or {}).pop("temperature", None)
+            if rest.get("generationConfig") == {}:
+                rest.pop("generationConfig")
+            return cls.gemini(name, api_key_env=str(key_env), temperature=temperature, body=rest or None, images=bool(settings.get("images", True)))
+        if builtin == "deepseek":
+            body = {k: v for k, v in dict(settings.get("body") or {}).items() if k != "model"}
+            base = str(settings.get("url") or "https://api.deepseek.com/chat/completions").rsplit("/chat/completions", 1)[0]
+            return cls.deepseek(name, api_key_env=str(key_env), base_url=base, body=body or None, images=bool(settings.get("images", False)))
+        return None
 
     def check(self, *, api_key: str | None = None) -> ModelCheck:
         """One tiny call: was the reply text found, and were usage and stop reason?"""
         return asyncio.run(self.acheck(api_key=api_key))
+
+
+def _effort(value: Any) -> str | None:
+    text = str(value or "").strip().lower()
+    return text or None
 
 
 class _BearerEnv(env):

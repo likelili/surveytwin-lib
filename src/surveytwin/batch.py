@@ -26,6 +26,12 @@ def _client(api_key: str | None):
     return OpenAIClient(openai_api_key=key)
 
 
+def _key(api_key: str | None, model: Any) -> str | None:
+    """The key a batch uses: the one given, else the model's own key variable."""
+    name = getattr(model, "api_key_env", None)
+    return api_key or (os.environ.get(str(name), "").strip() if name else "") or None
+
+
 def _check(plan: Any) -> None:
     if plan.mode != "static":
         raise BatchNotAvailable("Staged surveys cannot be batched: each stage needs the previous answers")
@@ -45,7 +51,7 @@ def submit(plan: Any, *, api_key: str | None = None, image_checker: Any = None) 
     blocked, _notes = _image_gate(plan, image_checker)
 
     async def go() -> str:
-        client = _client(api_key)
+        client = _client(_key(api_key, plan.config.model))
         try:
             items = plan.batch_items(client, blocked)
             if not items:
@@ -118,7 +124,7 @@ def collect(
         def record(item: UsageRecord) -> None:
             usage.append(item.to_dict())
 
-        client = _client(api_key)
+        client = _client(_key(api_key, plan.config.model))
         client.on_usage = record
         caller: Any = PresetCaller(plan.config.model, client)
         prompts: list[dict[str, Any]] = []

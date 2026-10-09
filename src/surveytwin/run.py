@@ -49,22 +49,20 @@ class _RecordingCaller:
 
 def _require_key(plan: Plan, api_key: str | None) -> None:
     model = plan.config.model
-    if model.kind != "preset":
-        require_model_env(model)
-        return
-    if model.provider == "openrouter":
-        if not (api_key or os.environ.get("OPENROUTER_API_KEY", "").strip()):
-            raise ConfigError("No OpenRouter key: pass api_key= or set OPENROUTER_API_KEY")
-        return
-    if not (api_key or os.environ.get("OPENAI_API_KEY", "").strip()):
-        raise ConfigError("No OpenAI key: pass api_key= or set OPENAI_API_KEY")
+    if model.kind == "preset" and not api_key and not os.environ.get(str(model.api_key_env or ""), "").strip():
+        label = "OpenRouter" if model.provider == "openrouter" else "OpenAI"
+        raise ConfigError(f"No {label} key: pass api_key= or set {model.api_key_env}")
+    require_model_env(model, api_key=api_key)
 
 
-def require_model_env(model: Any) -> None:
-    """Stop before any call when a defined model's ``env(...)`` variables are not
+def require_model_env(model: Any, *, api_key: str | None = None) -> None:
+    """Stop before any call when a model's key or ``env(...)`` variables are not
     set: otherwise every call would fail, be tried again, and every answer come
-    back skipped."""
+    back skipped. A key given as ``api_key`` stands for the model's own key
+    variable."""
     missing = model.missing_env() if hasattr(model, "missing_env") else []
+    if api_key and (getattr(model, "kind", "") == "preset" or getattr(model, "key_header", None)):
+        missing = [name for name in missing if name != getattr(model, "api_key_env", None)]
     if missing:
         raise ConfigError(
             f"Model {model.name!r} reads {', '.join(missing)} from the environment, which "
@@ -256,8 +254,21 @@ async def arun(
     finally:
         await caller.close()
     warnings.extend(run_warnings)
+    moved = _fallback_calls(plan.config.model, usage)
+    if moved:
+        warnings.append(
+            f"{moved} call(s) failed on OpenAI and were asked again through OpenRouter (fallback_to_openrouter=True); "
+            "results.usage names the provider of every call."
+        )
     _keep_shown_for_reruns(audits, rows, plan)
     return _build_results(plan, rows, audits, usage, warnings, prompts, started_at, time.monotonic() - started, batch_state, images_left_out=blocked)
+
+
+def _fallback_calls(model: Any, usage: list[dict[str, Any]]) -> int:
+    """How many calls of an OpenAI model went to OpenRouter instead."""
+    if getattr(model, "kind", "") != "preset" or getattr(model, "provider", "") != "openai":
+        return 0
+    return sum(1 for item in usage if str(item.get("provider", "")) == "openrouter" and str(item.get("status", "")) == "completed")
 
 
 def _describe_static_twins(plan: Plan, records: list[dict[str, Any]]) -> list[dict[str, Any]]:

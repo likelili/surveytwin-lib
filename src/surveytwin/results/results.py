@@ -578,21 +578,20 @@ class Results:
         if the_model is None:
             the_model = getattr(self, "_model", None)
         if the_model is None:
-            settings = (self.run.get("config") or {}).get("model") or {}
-            if settings.get("kind") != "preset":
+            # a built-in model is made again from its recorded settings
+            the_model = Model.from_settings((self.run.get("config") or {}).get("model") or {})
+            if the_model is None:
                 raise ResultsError(
                     "This run used a defined model; pass it again: rerun_flagged(model=...), "
                     "or on the command line: surveytwin rerun FOLDER --model FILE.py:NAME"
                 )
-            the_model = Model.preset(str(settings.get("name")), provider=str(settings.get("provider") or "openai"))
         if the_model.kind == "preset":
-            key_var = "OPENROUTER_API_KEY" if the_model.provider == "openrouter" else "OPENAI_API_KEY"
-            if not (api_key or os.environ.get(key_var, "").strip()):
-                raise ResultsError(f"No key: pass api_key= or set {key_var}")
+            if not (api_key or os.environ.get(str(the_model.api_key_env or ""), "").strip()):
+                raise ResultsError(f"No key: pass api_key= or set {the_model.api_key_env}")
         else:
             from ..run import require_model_env
 
-            require_model_env(the_model)
+            require_model_env(the_model, api_key=api_key)
         new_usage: list[dict[str, Any]] = []
 
         def record(item: Any) -> None:

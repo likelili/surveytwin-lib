@@ -15,7 +15,7 @@ import httpx
 
 from .context import current_call_context
 from .models import Model, ModelRequest, Reply
-from .openai_client import OpenAIClient, extract_json_string
+from .openai_client import OpenAIClient, extract_json_string  # noqa: F401 - OpenAIClient for callers that import it here
 from .usage import UsageRecord
 
 
@@ -29,6 +29,10 @@ class PresetCaller:
         return self.client.enabled
 
     async def chat_json(self, *, system_prompt: str, user_prompt: str, temperature: float, max_tokens: int) -> dict[str, Any]:
+        if self.model.reasoning_effort:
+            return json.loads(extract_json_string(await self.json_text(
+                system_prompt=system_prompt, user_prompt=user_prompt, temperature=temperature, max_tokens=max_tokens
+            )))
         return await self.client.chat_json(
             model=self.model.name,
             system_prompt=system_prompt,
@@ -38,12 +42,15 @@ class PresetCaller:
         )
 
     async def responses_input_text(self, *, input_items: list[dict[str, Any]], max_tokens: int) -> str:
-        return await self.client.responses_input_text(model=self.model.name, input_items=input_items, max_tokens=max_tokens)
+        return await self.client.responses_input_text(
+            model=self.model.name, input_items=input_items, max_tokens=max_tokens, reasoning_effort=self.model.reasoning_effort
+        )
 
     async def json_text(self, *, system_prompt: str, user_prompt: str, temperature: float, max_tokens: int) -> str:
         """The reply text of a JSON-mode call, unparsed (for callers that check its shape)."""
         return await self.client.chat_text(
-            self.model.name, system_prompt, user_prompt, temperature=temperature, max_tokens=max_tokens, response_format={"type": "json_object"}
+            self.model.name, system_prompt, user_prompt, temperature=temperature, max_tokens=max_tokens,
+            response_format={"type": "json_object"}, reasoning_effort=self.model.reasoning_effort,
         )
 
     async def close(self) -> None:
@@ -87,9 +94,10 @@ def _request_from_items(input_items: list[dict[str, Any]], max_tokens: int, json
 class DefinedModelCaller:
     """Calls a defined model; a cut-off reply is retried once with twice the room."""
 
-    def __init__(self, model: Model, on_usage: Callable[[UsageRecord], None] | None) -> None:
+    def __init__(self, model: Model, on_usage: Callable[[UsageRecord], None] | None, *, api_key: str | None = None) -> None:
         self.model = model
         self.on_usage = on_usage
+        self.api_key = api_key
         self._http: httpx.AsyncClient | None = None
 
     @property
@@ -136,7 +144,7 @@ class DefinedModelCaller:
         for attempt in range(2):
             request.max_output_tokens = budget if attempt == 0 else budget * 2
             try:
-                reply, meta = await self.model.acall(request, client=self._client())
+                reply, meta = await self.model.acall(request, client=self._client(), api_key=self.api_key)
             except Exception as exc:
                 self._record(None, {}, "failed", str(exc))
                 raise
@@ -188,18 +196,10 @@ class DefinedModelCaller:
 
 
 def make_caller(model: Model, *, api_key: str | None, on_usage: Callable[[UsageRecord], None] | None):
-    import os
-
+    """The caller a run uses for ``model``: an OpenAI or OpenRouter model through
+    its OpenAI client (the same requests as before; OpenRouter as a fallback only when
+    the model asks for it), any other model through ``Model.acall``. ``api_key``
+    replaces the key the model reads from the environment."""
     if model.kind == "preset":
-        if model.provider == "openrouter":
-            client = OpenAIClient(openrouter_api_key=api_key or os.environ.get("OPENROUTER_API_KEY", ""), on_usage=on_usage)
-        else:
-            # As on the website: an OpenRouter key, when present, is the fallback
-            # for a failed OpenAI call.
-            client = OpenAIClient(
-                openai_api_key=api_key or os.environ.get("OPENAI_API_KEY", ""),
-                openrouter_api_key=os.environ.get("OPENROUTER_API_KEY", ""),
-                on_usage=on_usage,
-            )
-        return PresetCaller(model, client)
-    return DefinedModelCaller(model, on_usage)
+        return PresetCaller(model, model.openai_client(api_key=api_key, on_usage=on_usage))
+    return DefinedModelCaller(model, on_usage, api_key=api_key)

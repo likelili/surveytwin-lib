@@ -32,7 +32,7 @@ prompts and the same export files.
 - [Step by step](#step-by-step)
 - [Building a survey in Python](#building-a-survey-in-python)
 - [Objects and functions](#objects-and-functions)
-- [Models](#models)
+- [Models](#models) and [API keys](#api-keys)
 - [Persona banks](#persona-banks)
 - [Command line](#command-line)
 - [Reproducibility](#reproducibility)
@@ -686,41 +686,52 @@ of these types:
 
 ## Models
 
-**Presets** are OpenAI models, called this way: the
-Responses API for GPT-5 models with a reasoning allowance and for any call with
-images, chat completions in JSON mode otherwise, and OpenRouter as a fallback
-when `OPENROUTER_API_KEY` is set. Any OpenAI model name works, including
-fine-tuned ones. Through OpenRouter, a GPT-5 model keeps its reasoning effort,
-and images go with the call.
+Every model is a `Model` object that knows how to call its API. A run sends each
+model the same request (`ModelRequest`: system text, user text, the content in
+order with its pictures, the output limit, JSON mode) and reads the same reply
+(`Reply`: the text, the token counts, whether the reply was cut off, the
+provider's request ID). The reply text holds the answers in one fixed format,
+`{"answers": [{"question_id", "answer_value", "answer_label", "answer_raw"}]}`,
+which the prompt asks for and the library reads.
+
+**Built-in models** already map their API to that request and reply:
 
 ```python
-config = st.configure(..., model="gpt-5.6-luna-medium")                  # OPENAI_API_KEY
-config = st.configure(..., model="gpt-5.4-high", provider="openrouter")  # OPENROUTER_API_KEY
+gpt = st.Model.openai("gpt-5.4", reasoning_effort="low")       # OPENAI_API_KEY
+routed = st.Model.openrouter("gpt-5.4-low")                    # OPENROUTER_API_KEY
+claude = st.Model.anthropic("claude-opus-5-5", effort="low")   # ANTHROPIC_API_KEY
+gemini = st.Model.gemini("gemini-2.5-pro")                     # GEMINI_API_KEY
+deepseek = st.Model.deepseek("deepseek-chat")                  # DEEPSEEK_API_KEY
+
+config = st.configure(..., model=claude)
+config = st.configure(..., model="gpt-5.6-luna-medium")        # a preset name: the same as Model.openai(name)
 ```
 
-**Defined models** send the same content to any endpoint in one of four request
-layouts: `openai-chat`, `openai-responses`, `anthropic`, `gemini`. Keys are read
-from environment variables when a call is made and are never saved.
+OpenAI models are called this way: the Responses API for GPT-5
+models (with a reasoning allowance) and for any call with images, chat
+completions in JSON mode otherwise. A preset name such as `gpt-5.4-low` fixes the
+API model and its reasoning effort. A failed OpenAI call goes to OpenRouter only
+with `Model.openai(..., fallback_to_openrouter=True)`, and the run then says how
+many calls did. Current Claude models think before answering and take no
+temperature, so none is sent.
+
+**Models of your own** send the same content to any endpoint in one of four
+request layouts (`openai-chat`, `openai-responses`, `anthropic`, `gemini`), or
+are a Python function:
 
 ```python
-claude = st.Model.http(
-    "claude-sonnet",
-    "https://api.anthropic.com/v1/messages",
-    layout="anthropic",
-    headers={"x-api-key": st.env("ANTHROPIC_API_KEY"), "anthropic-version": "2023-06-01"},
-    body={"model": "claude-sonnet-5"},
-)
-gemini = st.Model.http(
-    "gemini",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
-    layout="gemini",
-    headers={"x-goog-api-key": st.env("GEMINI_API_KEY")},
+gateway = st.Model.http(
+    "my-gateway",
+    "https://gateway.example/v1/chat/completions",
+    layout="openai-chat",
+    headers={"Authorization": st.env("GATEWAY_KEY")},
+    body={"model": "some-model"},
 )
 local = st.Model.openai_compatible("llama", "http://localhost:8000/v1", api_key_env="LOCAL_KEY")
 mine = st.Model.from_function(lambda request: my_model(request.system, request.user), name="mine")
 
 print(claude.check())                    # one tiny call: were the reply, token counts and stop reason found?
-config = st.configure(..., model=claude)
+print(claude.ask("Say hello.").text)     # ask any model directly, outside a run
 ```
 
 `body` fields are added to the layout's request (`None` removes a field). For an
@@ -728,6 +739,23 @@ unusual reply, `text_key`, `usage_keys` and `stop_key` (with `cut_off_values`)
 point at the right fields by dotted path, such as `"content.0.text"`. A reply
 cut off by the output limit is asked again once with twice the room. A function
 model receives a `ModelRequest` and returns a string or a `Reply`.
+
+### API keys
+
+- **Set the key in your environment** before you run, in the variable the model
+  reads: for example `export OPENAI_API_KEY=...` in the terminal, or
+  `os.environ["OPENAI_API_KEY"] = ...` in Python. Each built-in model has its
+  own variable (above); `api_key_env="MY_VARIABLE"` names another.
+- **Or pass it to the run:** `st.run(plan, api_key=...)` (and `rerun_flagged`,
+  `model.check`, `model.ask`) replaces the model's own key for that call.
+- **A model of your own** puts `st.env("NAME")` where its API wants the key
+  (`headers={"x-api-key": st.env("MY_KEY")}`); the variable is read when each
+  call is made.
+- Keys are never written into results, saved runs or logs: settings show the
+  variable's name only, and a request field named like a secret (`api_key`,
+  `token`, ...) shows as `<hidden>`. The library does not read `.env` files;
+  load one yourself (for example with `python-dotenv`) if you keep keys there.
+- A run stops before its first call when a model's key variable is not set.
 
 The library has no prices and computes no cost. Each call's token counts, as the
 provider reports them, are kept in `results.usage`.

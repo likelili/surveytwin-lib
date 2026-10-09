@@ -314,6 +314,7 @@ class Plan:
                 item = ex.build_persona_batch_item(
                     custom_id=str(idx),
                     model=self.config.model.name,
+                    reasoning_effort=self.config.model.reasoning_effort,
                     client=client,
                     persona_text=twin.text,
                     questions=instance.get("questions", []),

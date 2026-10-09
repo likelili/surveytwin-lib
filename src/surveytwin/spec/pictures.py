@@ -64,6 +64,23 @@ def _mime_type(head: bytes) -> str | None:
     return None
 
 
+def _read_picture(source: str, folder: Path) -> tuple[str, str]:
+    """(the picture as a data address, "") or ("", why it cannot be used)."""
+    path = Path(source.strip()).expanduser()
+    if not path.is_absolute():
+        path = folder / path
+    if not path.is_file():
+        return "", f"no picture file at {path}"
+    size = path.stat().st_size
+    if size > MAX_PICTURE_BYTES:
+        return "", f"{path} is {size / 1024 / 1024:.1f} MB; a picture can be at most {MAX_PICTURE_BYTES // 1024 // 1024} MB"
+    data = path.read_bytes()
+    mime = _mime_type(data[:16])
+    if mime is None:
+        return "", f"{path} is not a {PICTURE_KINDS} picture"
+    return f"data:{mime};base64,{base64.b64encode(data).decode('ascii')}", ""
+
+
 def read_pictures(definition: dict[str, Any], folder: Path) -> tuple[dict[str, str], list[Finding]]:
     """Each picture file the definition names, read: ``{source as written: data
     address}``, and a finding for every one that cannot be used. ``folder`` is
@@ -75,28 +92,27 @@ def read_pictures(definition: dict[str, Any], folder: Path) -> tuple[dict[str, s
         source = item["source"]
         if not is_file_source(source) or source in pictures or source in failed:
             continue
-        field = f"{place}.source"
-        path = Path(source.strip()).expanduser()
-        if not path.is_absolute():
-            path = folder / path
-        problem = ""
-        data = b""
-        if not path.is_file():
-            problem = f"no picture file at {path}"
-        else:
-            size = path.stat().st_size
-            if size > MAX_PICTURE_BYTES:
-                problem = f"{path} is {size / 1024 / 1024:.1f} MB; a picture can be at most {MAX_PICTURE_BYTES // 1024 // 1024} MB"
-            else:
-                data = path.read_bytes()
-                if _mime_type(data[:16]) is None:
-                    problem = f"{path} is not a {PICTURE_KINDS} picture"
+        address, problem = _read_picture(source, folder)
         if problem:
             failed.add(source)
-            findings.append(Finding(field, problem, "picture.file"))
+            findings.append(Finding(f"{place}.source", problem, "picture.file"))
             continue
-        pictures[source] = f"data:{_mime_type(data[:16])};base64,{base64.b64encode(data).decode('ascii')}"
+        pictures[source] = address
     return pictures, findings
+
+
+def picture_file_address(source: str, folder: Path | None = None) -> str:
+    """One picture as a request carries it: a web link or a ``data:`` address as
+    given, a picture file read (from ``folder``, or the current folder, when the
+    path is relative). Raises ``ConfigError`` when the file cannot be used."""
+    if not is_file_source(source):
+        return str(source)
+    address, problem = _read_picture(str(source), folder or Path.cwd())
+    if problem:
+        from ..errors import ConfigError
+
+        raise ConfigError(problem)
+    return address
 
 
 def with_pictures(definition: dict[str, Any], pictures: dict[str, str]) -> dict[str, Any]:

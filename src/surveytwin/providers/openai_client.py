@@ -670,11 +670,13 @@ class OpenAIClient:
         temperature: float = 0.3,
         max_tokens: int = 2500,
         response_format: dict[str, Any] | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
-        """One /v1/chat/completions body for a batch line (the website's shape)."""
+        """One /v1/chat/completions body for a batch line (the website's shape);
+        ``reasoning_effort`` replaces the preset's own."""
         spec = self._model_spec(model)
         model_name = str(spec.get("model_name", model))
-        default_effort = self._default_reasoning_effort_for_model(model)
+        default_effort = reasoning_effort or self._default_reasoning_effort_for_model(model)
         body: dict[str, Any] = {"model": model_name, "messages": messages}
         if self._is_gpt5_model(model_name):
             normalized_effort = self._normalize_reasoning_effort(model_name, default_effort)

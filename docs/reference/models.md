@@ -1,9 +1,20 @@
 # Models
 
-A run asks every twin through a model. This page covers the `Model` class (named
-presets, models you define for any HTTP address, and Python functions), `env`
-for keys, and the records of a model call: `ModelRequest`, `Reply` and
-`ModelCheck`. You choose the model in `configure(model=...)`, with a preset name
+A run asks every twin through a model. This page covers the `Model` class (the
+built-in models of OpenAI, OpenRouter, Claude, Gemini and DeepSeek; models you
+define for any HTTP address; and Python functions), `env` for keys, and the
+records of a model call: `ModelRequest`, `Reply` and `ModelCheck`.
+
+Every model takes the same request (`ModelRequest`: the system text, the user
+text, the content in order with its pictures, the output limit, JSON mode) and
+gives back the same reply (`Reply`: the text, the token counts, whether the
+output limit cut it off, the provider's request ID, the raw response). The reply
+text holds the answers in the fixed answer format the prompt asks for
+(`{"answers": [{"question_id", "answer_value", "answer_label", "answer_raw"}]}`,
+see [Prompt texts](prompts.md)); the library reads it and records each answer,
+and keeps one usage record per call. A built-in model already maps its API to
+this request and reply; a model of your own maps it with key paths
+(`Model.http`) or with your own code (`Model.from_function`). You choose the model in `configure(model=...)`, with a preset name
 or a `Model`; it is first called by `run` (see [Running a plan](running.md)).
 Each example on this page continues from the ones before it.
 
@@ -15,13 +26,26 @@ methods check the definition.
 
 | Class method | `kind` | What it calls |
 |---|---|---|
-| [`Model.preset`](#modelpreset) | `"preset"` | OpenAI or OpenRouter, by preset or model name |
+| [`Model.openai`](#modelopenai) | `"preset"` | OpenAI, by preset or model name |
+| [`Model.openrouter`](#modelopenrouter) | `"preset"` | OpenAI models through OpenRouter |
+| [`Model.preset`](#modelpreset) | `"preset"` | either of the two, by name |
+| [`Model.anthropic`](#modelanthropic) | `"http"` | Claude, through Anthropic's Messages API |
+| [`Model.gemini`](#modelgemini) | `"http"` | Gemini, through Google's generateContent API |
+| [`Model.deepseek`](#modeldeepseek) | `"openai-compatible"` | DeepSeek, through its OpenAI-compatible API |
 | [`Model.http`](#modelhttp) | `"http"` | any HTTP address, in one of four request layouts |
 | [`Model.openai_compatible`](#modelopenai_compatible) | `"openai-compatible"` | a server that accepts OpenAI's chat format |
 | [`Model.from_function`](#modelfrom_function) | `"function"` | a Python function of yours |
 
 A preset name given to `configure(model="gpt-5.6-luna-medium", provider=...)` is
-the same as `Model.preset(name, provider=provider)`. A `Model` is a record (a
+the same as `Model.preset(name, provider=provider)`.
+
+**Keys.** A built-in model reads its key from an environment variable when each
+call is made: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`,
+`GEMINI_API_KEY` or `DEEPSEEK_API_KEY`, or the name you give as `api_key_env`.
+`run(plan, api_key=...)` (and `rerun_flagged`, `check`, `ask`) replaces it with
+the key you pass. A model of your own puts `env("NAME")` where its API wants the
+key. Keys are never written into settings, results or saved files. The library
+does not read `.env` files; load one yourself if you keep keys there. A `Model` is a record (a
 dataclass) of its definition; to change a model, build a new one.
 
 ### Attributes / properties
@@ -40,7 +64,13 @@ dataclass) of its definition; to change a model, build a new one.
 | `stop_key` | `str \| None` | Where an HTTP model's stop reason is, when not where the layout looks. |
 | `cut_off_values` | `list[str] \| None` | The stop reasons, read at `stop_key`, that mean the reply was cut off. |
 | `function` | `Callable[[ModelRequest], Any] \| None` | A function model's function; `None` for other kinds. |
-| `provider` | `str` | For a preset, `"openai"` or `"openrouter"`. Other kinds keep the default, `"openai"`, and do not use it. |
+| `provider` | `str` | For a preset, `"openai"` or `"openrouter"`; for a built-in model, `"anthropic"`, `"gemini"` or `"deepseek"`. Other kinds keep the default, `"openai"`, and do not use it. |
+| `builtin` | `str` | Which built-in model this is (`"openai"`, `"openrouter"`, `"anthropic"`, `"gemini"`, `"deepseek"`); empty for a model of your own. A built-in model is made again from its settings ([`Model.from_settings`](#modelfrom_settings)). |
+| `api_key_env` | `str \| None` | The environment variable that holds the key of a built-in model, or of `openai_compatible(api_key_env=...)`. |
+| `key_header` | `str \| None` | The header a key passed to `run(api_key=...)` goes in, for a model called over HTTP (`"x-api-key"` for Claude, `"x-goog-api-key"` for Gemini, `"Authorization"` for DeepSeek and OpenAI-compatible servers). `None`: the model takes no such key. |
+| `key_prefix` | `str` | What comes before that key in its header: `"Bearer "` for `Authorization`, else empty. |
+| `reasoning_effort` | `str \| None` | An OpenAI or OpenRouter model's reasoning effort, replacing the preset's own; `None` keeps the preset's. |
+| `fallback_to_openrouter` | `bool` | Whether a failed OpenAI call is made once more through OpenRouter (`Model.openai(..., fallback_to_openrouter=True)`). `False` by default. |
 | `timeout_s` | `float` | How many seconds an HTTP model waits for each call (default 180). Presets have their own: 240 seconds for the Responses API, 180 for chat completions. |
 | `source` | `str` | Where the model was defined, when the command line read it from a file: `"FILE.py:NAME (sha256 <first 12 digits>)"`, the file's name without its folder. Empty otherwise. |
 | `settings` | `dict[str, Any]` | Property: what a run records about the model, never a key. See [`Model.settings`](#modelsettings). |
@@ -51,9 +81,10 @@ dataclass) of its definition; to change a model, build a new one.
 Model.preset(name: str, *, provider: str = 'openai') -> Model
 ```
 
-A model called through OpenAI or OpenRouter, by name. A named preset fixes the
-API model and its reasoning effort, so that runs stay comparable. Any other name
-is sent to the API as written: any OpenAI model works, fine-tuned ones included,
+A model called through OpenAI or OpenRouter, by name: the same as
+`Model.openai(name)` or `Model.openrouter(name)`. A named preset fixes the API
+model and its reasoning effort, so that runs stay comparable. Any other name is
+sent to the API as written: any OpenAI model works, fine-tuned ones included,
 and with `provider="openrouter"` any OpenRouter model. A name is not checked
 until the first call; `model.check()` tells you whether it works.
 
@@ -97,8 +128,10 @@ How a preset is called:
   - A Responses API reply that is cut off by the output limit, or empty, is asked
     again once, with twice the output limit and the reasoning effort lowered to
     low. A chat completions reply is not asked again.
-  - When `OPENROUTER_API_KEY` is set in the environment, a call that fails at
-    OpenAI is made once more through OpenRouter, as below.
+  - Only a model made with `Model.openai(..., fallback_to_openrouter=True)`, with
+    `OPENROUTER_API_KEY` set, makes a call that fails at OpenAI once more through
+    OpenRouter, as below; the run then warns how many calls went there, and
+    `results.usage` names the provider of each call.
 - **Through OpenRouter** (`provider="openrouter"`; the key from `api_key` or
   `OPENROUTER_API_KEY`): every call goes to OpenRouter's chat completions (in
   JSON mode for calls without images), under the OpenRouter name: `openai/` and
@@ -133,8 +166,190 @@ print(model.settings)
 
 ```
 preset True
-{'name': 'gpt-5.4-high', 'kind': 'preset', 'provider': 'openai', 'api_model': 'gpt-5.4', 'reasoning_effort': 'high'}
+{'name': 'gpt-5.4-high', 'kind': 'preset', 'provider': 'openai', 'api_model': 'gpt-5.4', 'reasoning_effort': 'high', 'api_key_env': 'OPENAI_API_KEY'}
 ```
+
+### `Model.openai`
+
+```python
+Model.openai(
+    name: str,
+    *,
+    reasoning_effort: str | None = None,
+    api_key_env: str = 'OPENAI_API_KEY',
+    fallback_to_openrouter: bool = False,
+) -> Model
+```
+
+An OpenAI model, called the way a preset is (see [`Model.preset`](#modelpreset)
+for every request it sends).
+
+**Parameters**
+
+- `name` (`str`): a preset name (`gpt-5.4-low` fixes the API model and its
+  reasoning effort) or any OpenAI model name.
+- `reasoning_effort` (`str | None`, default `None`): the reasoning effort for a
+  GPT-5 model (such as `"low"`), replacing the preset's own, in real-time calls
+  and in Batch lines alike. `None` keeps the preset's.
+- `api_key_env` (`str`, default `'OPENAI_API_KEY'`): the environment variable
+  that holds the key.
+- `fallback_to_openrouter` (`bool`, default `False`): make a call that fails at
+  OpenAI once more through OpenRouter (when `OPENROUTER_API_KEY` is set). A run
+  then mixes two providers for those calls, so it says how many.
+
+**Returns** `Model`: with `kind="preset"`, `provider="openai"`.
+
+**Example**
+
+```python
+model = st.Model.openai("gpt-5.4", reasoning_effort="low")
+print(model.settings)
+```
+
+```
+{'name': 'gpt-5.4', 'kind': 'preset', 'provider': 'openai', 'api_model': 'gpt-5.4', 'reasoning_effort': 'low', 'api_key_env': 'OPENAI_API_KEY', 'reasoning_effort_set': True}
+```
+
+### `Model.openrouter`
+
+```python
+Model.openrouter(name: str, *, reasoning_effort: str | None = None, api_key_env: str = 'OPENROUTER_API_KEY') -> Model
+```
+
+An OpenAI model through OpenRouter, by preset or model name (see
+[`Model.preset`](#modelpreset) for how it is called).
+
+**Parameters**
+
+- `name` (`str`): a preset name, or any OpenRouter model name.
+- `reasoning_effort` (`str | None`, default `None`): as for `Model.openai`.
+- `api_key_env` (`str`, default `'OPENROUTER_API_KEY'`): the environment
+  variable that holds the key.
+
+**Returns** `Model`: with `kind="preset"`, `provider="openrouter"`.
+
+**Example**
+
+```python
+print(st.Model.openrouter("gpt-5.4-low").settings)
+```
+
+```
+{'name': 'gpt-5.4-low', 'kind': 'preset', 'provider': 'openrouter', 'api_model': 'gpt-5.4', 'reasoning_effort': 'low', 'api_key_env': 'OPENROUTER_API_KEY'}
+```
+
+### `Model.anthropic`
+
+```python
+Model.anthropic(
+    name: str,
+    *,
+    api_key_env: str = 'ANTHROPIC_API_KEY',
+    effort: str | None = None,
+    temperature: float | None = None,
+    body: dict[str, Any] | None = None,
+    images: bool = True,
+    url: str = 'https://api.anthropic.com/v1/messages',
+    timeout_s: float = 600.0,
+) -> Model
+```
+
+A Claude model through Anthropic's Messages API: the `anthropic` layout (see
+[The four request layouts](#the-four-request-layouts)) at Anthropic's address,
+with the key in the `x-api-key` header and `anthropic-version: 2023-06-01`.
+Current Claude models think before they answer (the thinking is not part of the
+reply text) and take no temperature, so none is sent unless you give one.
+
+**Parameters**
+
+- `name` (`str`): the Claude model, such as `"claude-opus-5-5"`.
+- `api_key_env` (`str`, default `'ANTHROPIC_API_KEY'`): the environment variable
+  that holds the key.
+- `effort` (`str | None`, default `None`): `output_config.effort`
+  (`"low"` to `"max"`): how much the model thinks. `None` leaves the model's
+  default.
+- `temperature` (`float | None`, default `None`): sent only when given, for an
+  older Claude model that accepts one.
+- `body` (`dict[str, Any] | None`, default `None`): more request fields, merged
+  as for `Model.http`.
+- `images` (`bool`, default `True`): whether to send pictures.
+- `url` (`str`, default the Messages API): another address that speaks the same
+  API.
+- `timeout_s` (`float`, default `600.0`): seconds to wait for each call.
+
+**Returns** `Model`: with `kind="http"`, `builtin="anthropic"`.
+
+**Example**
+
+```python
+print(st.Model.anthropic("claude-opus-5-5", effort="low").settings["body"])
+```
+
+```
+{'model': 'claude-opus-5-5', 'output_config': {'effort': 'low'}}
+```
+
+### `Model.gemini`
+
+```python
+Model.gemini(
+    name: str,
+    *,
+    api_key_env: str = 'GEMINI_API_KEY',
+    temperature: float | None = None,
+    body: dict[str, Any] | None = None,
+    images: bool = True,
+    timeout_s: float = 600.0,
+) -> Model
+```
+
+A Gemini model through Google's `generateContent` API: the `gemini` layout at
+`https://generativelanguage.googleapis.com/v1beta/models/<name>:generateContent`,
+with the key in the `x-goog-api-key` header. Pictures are sent inside the
+request.
+
+**Parameters**
+
+- `name` (`str`): the Gemini model, such as `"gemini-2.5-pro"`.
+- `api_key_env` (`str`, default `'GEMINI_API_KEY'`): the environment variable
+  that holds the key.
+- `temperature` (`float | None`, default `None`): `generationConfig.temperature`;
+  `None` keeps the layout's 0.3.
+- `body` (`dict[str, Any] | None`, default `None`): more request fields, merged
+  as for `Model.http`.
+- `images` (`bool`, default `True`): whether to send pictures.
+- `timeout_s` (`float`, default `600.0`): seconds to wait for each call.
+
+**Returns** `Model`: with `kind="http"`, `builtin="gemini"`.
+
+### `Model.deepseek`
+
+```python
+Model.deepseek(
+    name: str = 'deepseek-chat',
+    *,
+    api_key_env: str = 'DEEPSEEK_API_KEY',
+    base_url: str = 'https://api.deepseek.com',
+    body: dict[str, Any] | None = None,
+    images: bool = False,
+) -> Model
+```
+
+A DeepSeek model through its OpenAI-compatible API (`<base_url>/chat/completions`,
+the key as `Authorization: Bearer ...`). Its chat models take text only, so a run
+of a survey with pictures stops unless you set `images=True` for a model that
+takes them.
+
+**Parameters**
+
+- `name` (`str`, default `'deepseek-chat'`): the DeepSeek model.
+- `api_key_env` (`str`, default `'DEEPSEEK_API_KEY'`): the environment variable
+  that holds the key.
+- `base_url` (`str`, default `'https://api.deepseek.com'`): the API's address.
+- `body` (`dict[str, Any] | None`, default `None`): more request fields.
+- `images` (`bool`, default `False`): whether the model takes pictures.
+
+**Returns** `Model`: with `kind="openai-compatible"`, `builtin="deepseek"`.
 
 ### `Model.http`
 
@@ -261,8 +476,9 @@ and where it reads the reply. No layout sends a model name: give it in `body`
 **`anthropic`**: Anthropic's Messages API.
 
 - Sends `system`, `messages` (one user message of `text` and `image` parts in
-  order: an image by its URL, or as base64 data for a `data:` address),
-  `max_tokens` and `temperature`. It has no JSON mode; the prompt asks for JSON.
+  order: an image by its URL, or as base64 data for a `data:` address) and
+  `max_tokens`. It sends no temperature, which current Claude models refuse; add
+  one in `body` for an older model. It has no JSON mode; the prompt asks for JSON.
 - Reads the `text` blocks of `content`, the token counts from
   `usage.input_tokens` and `usage.output_tokens`, and the stop reason from
   `stop_reason`. `"max_tokens"` means cut off.
@@ -293,8 +509,10 @@ Values may be `env("NAME")` placeholders, at any depth. A field you set wins on
 every call, the retry with twice the room included: `body={"max_tokens": 8192}`
 caps the output of an `anthropic` or `openai-chat` model, whatever limit the run
 asks for (see `ModelRequest.max_output_tokens`). The body is recorded with the
-results, each `env(...)` shown by its name; a key written as plain text would be
-recorded as written.
+results, each `env(...)` shown by its name. A field whose name says it holds a
+secret (`api_key`, `token`, `secret`, `password`, `authorization`, ...) is
+recorded as `<hidden>` even when written as plain text; give keys with
+`env(...)` all the same.
 
 #### Replies in another shape
 
@@ -408,11 +626,13 @@ function False {'name': 'my-model', 'kind': 'function', 'images': False}
 Model.missing_env() -> list[str]
 ```
 
-The environment variables this model's `env(...)` placeholders (in its headers
-or body, including `api_key_env=`) read that are not set now, each once, in the
-order they appear. Empty when every one is set, and for presets and function
-models, which have none. `run`, `arun` and `Results.rerun_flagged` call it
-before any request and stop with `ConfigError` when it is not empty.
+The environment variables this model reads that are not set now, each once, in
+the order they appear: an OpenAI or OpenRouter model's key variable
+(`api_key_env`), and the `env(...)` placeholders in a model's headers or body.
+Empty when every one is set, and for function models. `run`, `arun` and
+`Results.rerun_flagged` call it before any request and stop with `ConfigError`
+when it is not empty (a key passed as `api_key=` stands for the model's own key
+variable).
 
 **Returns** `list[str]`: the names of the unset variables.
 
@@ -450,9 +670,9 @@ It runs its own event loop; in async code, use [`acheck`](#modelacheck).
 
 **Parameters**
 
-- `api_key` (`str | None`, default `None`): for a preset, the key for its
-  provider. `None` reads `OPENAI_API_KEY` or `OPENROUTER_API_KEY`. Other models
-  do not use it.
+- `api_key` (`str | None`, default `None`): a key that replaces the model's own
+  (for a built-in model, or an OpenAI-compatible one with `api_key_env`). `None`
+  reads the model's key variable.
 
 **Returns** `ModelCheck`: what the check found.
 
@@ -515,28 +735,33 @@ True
 ### `Model.acall`
 
 ```python
-Model.acall(request: ModelRequest, *, client: httpx.AsyncClient) -> tuple[Reply, dict[str, Any]]
+Model.acall(request: ModelRequest, *, client: httpx.AsyncClient, api_key: str | None = None) -> tuple[Reply, dict[str, Any]]
 ```
 
-Calls an HTTP or function model once, and returns its reply as the library reads
-it. A run makes each of its calls through it. Call it yourself to see how your
-address's reply is read. It does not retry; the retry of a cut-off reply happens
-in the run (see [A reply cut off by the output limit](#a-reply-cut-off-by-the-output-limit)).
+Calls the model once, and returns its reply as the library reads it. A run makes
+each call of an HTTP or function model through it; an OpenAI or OpenRouter model
+makes the same requests as in a run (through [`openai_client`](#modelopenai_client)).
+Call it yourself to see how your address's reply is read. An HTTP or function
+model is not asked again here; the retry of a cut-off reply happens in the run
+(see [A reply cut off by the output limit](#a-reply-cut-off-by-the-output-limit)).
 
 **Parameters**
 
 - `request` (`ModelRequest`): what to ask.
 - `client` (`httpx.AsyncClient`): the HTTP client to post with, and, for the
-  `gemini` layout, to download images. A function model does not use it.
+  `gemini` layout, to download images. A function model and an OpenAI model do
+  not use it.
+- `api_key` (`str | None`, default `None`): a key that replaces the model's own
+  (see `key_header`). `None` reads the model's key variable.
 
 **Returns** `tuple[Reply, dict[str, Any]]`: the reply, and a short summary:
-`latency_ms`, `status` (`"completed"`) and, for an HTTP model, `stop_reason` (as
-read, or `None`).
+`latency_ms`, `status` (`"completed"`), for an HTTP model `stop_reason` (as
+read, or `None`), and for an OpenAI model `providers` (the providers that
+answered).
 
 **Raises**
 
-- `ConfigError`: the model is a preset, which this method does not call; or an
-  `env(...)` variable is not set.
+- `ConfigError`: an `env(...)` variable is not set.
 - `RuntimeError`: the address answered with an HTTP error status
   (`"<name> API error <status>: <reply>"`), or with a reply that is not JSON.
 - Any error the function of a function model raises.
@@ -586,6 +811,127 @@ print(summary["stop_reason"])
 done
 ```
 
+### `Model.openai_client`
+
+```python
+Model.openai_client(*, api_key: str | None = None, on_usage: Callable[[UsageRecord], None] | None = None) -> OpenAIClient
+```
+
+The OpenAI client an OpenAI or OpenRouter model calls through, with its key, and
+OpenRouter's key for a fallback only when the model asks for one. A run, a Batch
+run, `check` and `ask` use it; you need it only to make calls of your own the way
+the library does.
+
+**Parameters**
+
+- `api_key` (`str | None`, default `None`): a key that replaces the model's own.
+- `on_usage` (`Callable[[UsageRecord], None] | None`, default `None`): called
+  with the usage record of every request the client makes.
+
+**Returns** `OpenAIClient`.
+
+**Raises**
+
+- `ConfigError`: the model is not an OpenAI or OpenRouter model.
+
+### `Model.aask`
+
+```python
+Model.aask(
+    prompt: str,
+    *,
+    system: str = '',
+    images: list[str] | tuple[str, ...] = (),
+    json: bool = False,
+    max_output_tokens: int = 2000,
+    api_key: str | None = None,
+) -> Reply
+```
+
+Asks the model one thing, outside a run, in the request shape a run sends (one
+`ModelRequest` through [`acall`](#modelacall)), and returns the `Reply`: to try a
+model, or to use it in code of your own. An async function; `ask` is the same
+for code that is not async.
+
+**Parameters**
+
+- `prompt` (`str`): the user text.
+- `system` (`str`, default `''`): the system text.
+- `images` (`list[str] | tuple[str, ...]`, default `()`): pictures sent after
+  the prompt: web links, `data:` addresses, or picture files (read as
+  `read_survey` reads them, a relative path from the current folder).
+- `json` (`bool`, default `False`): ask for JSON (JSON mode where the API has
+  one).
+- `max_output_tokens` (`int`, default `2000`): the output limit.
+- `api_key` (`str | None`, default `None`): a key that replaces the model's own.
+
+**Returns** `Reply`.
+
+**Raises**
+
+- `ConfigError`: a picture file cannot be used, or the model takes no pictures
+  and some were given; an `env(...)` variable is not set.
+- `RuntimeError`: the address answered with an HTTP error status.
+
+### `Model.ask`
+
+```python
+Model.ask(
+    prompt: str,
+    *,
+    system: str = '',
+    images: list[str] | tuple[str, ...] = (),
+    json: bool = False,
+    max_output_tokens: int = 2000,
+    api_key: str | None = None,
+) -> Reply
+```
+
+[`aask`](#modelaask) for code that is not async: it runs its own event loop.
+
+**Parameters**
+
+- `prompt` (`str`), `system` (`str`, default `''`), `images`
+  (`list[str] | tuple[str, ...]`, default `()`), `json` (`bool`, default
+  `False`), `max_output_tokens` (`int`, default `2000`) and `api_key`
+  (`str | None`, default `None`): as for `aask`.
+
+**Returns** `Reply`.
+
+**Raises**
+
+- As for `aask`; and `RuntimeError` when an event loop is already running.
+
+**Example**
+
+```python
+stand_in = st.Model.from_function(lambda request: st.Reply(text="Paris", input_tokens=9, output_tokens=1), name="stand-in")
+reply = stand_in.ask("What is the capital of France?")
+print(reply.text, reply.input_tokens, reply.output_tokens)
+```
+
+```
+Paris 9 1
+```
+
+### `Model.from_settings`
+
+```python
+Model.from_settings(settings: dict[str, Any]) -> Model | None
+```
+
+A built-in model made again from the settings a run recorded
+(`results.run["config"]["model"]`): `rerun_flagged` uses it, so a saved run of a
+built-in model can be asked again without giving the model. `None` for a model
+of your own (`Model.http`, `Model.openai_compatible` without `builtin`, a
+function), which only its definition can make.
+
+**Parameters**
+
+- `settings` (`dict[str, Any]`): a model's `settings`.
+
+**Returns** `Model | None`.
+
 ### `Model.settings`
 
 ```python
@@ -595,16 +941,16 @@ Model.settings -> dict[str, Any]
 Property. What a run records about the model, in the run settings and in
 `results.provenance["model"]`. It never holds a key.
 
-- For a preset: `name`, `kind`, `provider`, `api_model` (the API model name) and
-  `reasoning_effort`.
-- For other kinds: `name` and `kind`; then, when they are set, `layout`, `url`
-  without its query string, `headers` with every value shown as `<hidden>`,
-  `body` with each `env(...)` shown as `<env NAME>`, `text_key` (a function shows
-  as `<function>`), `usage_keys`, `stop_key` and `cut_off_values`; and `images`.
+- For an OpenAI or OpenRouter model: `name`, `kind`, `provider`, `api_model` (the
+  API model name), `reasoning_effort`, `api_key_env`; `reasoning_effort_set`
+  when you set the effort, and `fallback_to_openrouter` when it is on.
+- For other kinds: `name` and `kind`; `builtin` and `api_key_env` for a built-in
+  model; then, when they are set, `layout`, `url` without its query string,
+  `headers` with every value shown as `<hidden>`, `body` with each `env(...)`
+  shown as `<env NAME>` and each field named like a secret shown as `<hidden>`,
+  `text_key` (a function shows as `<function>`), `usage_keys`, `stop_key` and
+  `cut_off_values`; and `images`.
 - `defined_in`, the `source`, when it is set.
-
-A value written into `body` as plain text is recorded as written, so give keys
-with `env(...)`.
 
 **Example**
 

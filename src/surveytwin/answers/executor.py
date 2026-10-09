@@ -1446,6 +1446,7 @@ def build_persona_batch_item(
     custom_id: str,
     model: str,
     client: Any,
+    reasoning_effort: str | None = None,
     persona_text: str,
     questions: list[dict[str, Any]],
     survey_sequence_text: str | None = None,
@@ -1469,6 +1470,7 @@ def build_persona_batch_item(
         temperature=0.3,
         max_tokens=max_tokens,
         response_format={"type": "json_object"},
+        reasoning_effort=reasoning_effort,
     )
     return {"custom_id": custom_id, "body": body}
 
