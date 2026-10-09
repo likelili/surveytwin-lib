@@ -86,11 +86,12 @@ run(plan)              ->  Results     every answer, the export files, the repor
 ```
 
 A survey can be written in [the standard format](#the-standard-survey-format),
-read from a QSF, or built from a draft a web form sends: see [Building a survey
-in Python](#building-a-survey-in-python).
+read from a QSF, or built question by question in Python: see [Building a
+survey in Python](#building-a-survey-in-python).
 
 Objects are records of what you asked for. To change something, make a new
-one: `survey.drop_blocks(...)` returns a new survey, and to change a setting you
+one: `survey.drop_blocks(...)` and `survey.add_question(...)` return a new
+survey, and to change a setting you
 call `configure(...)` again and then `plan(...)` again. Editing an object's
 attributes by hand is not supported; a plan keeps the settings it was built
 with.
@@ -535,10 +536,53 @@ CSV uses it.
 
 ## Building a survey in Python
 
-`surveytwin.builder` makes a `Survey` from a draft: a title and a list of
-questions, in a JSON shape a web form can send. A
-built survey goes through the same check, plan, run and exports as an imported
-one. The edit functions also work on surveys read from a QSF.
+Start an empty survey with `new_survey`, or take one you read (`read_survey`,
+`read_qsf`), and change it with the survey's edit methods. Each returns a new
+survey and writes [the standard format](#the-standard-survey-format) directly:
+
+```python
+survey = st.new_survey("Coffee habits")
+survey = survey.add_question("single_choice", "Do you drink coffee?", options=["Yes", "No"], id="drinks", required=True)
+survey = survey.add_question("number", "How many cups on a typical day?", id="cups", min=0, max=12,
+                             show_if={"op": "selected", "question": "drinks", "option": "1"})
+survey = survey.add_question("grid", "How important is each when you buy coffee?", id="importance",
+                             rows=["Price", "Taste"], scale="agreement_5")
+survey = survey.group_into_block(["cups", "importance"], "habits", title="Habits")
+print(survey)
+print(survey.standard["flow"])
+```
+
+```
+Survey('Coffee habits', 3 questions, 2 blocks)
+[{'type': 'show_block', 'block': 'main'}, {'type': 'show_block', 'block': 'habits'}]
+```
+
+- **Questions:** `add_question(type, text, ...)`, where `type` is
+  `instruction`, `single_choice`, `multiple_choice`, `text`, `number`, `grid`,
+  `number_grid`, `text_grid`, `sum_grid`, `form`, `ranking`, `allocation` or
+  `side_by_side`; then `update_question`, `move_question`, `swap_questions` and
+  `remove_question`. A question goes into `block=` at `position=`, or
+  `after=`/`before=` another question.
+- **Blocks:** `add_block`, `remove_block`, and `group_into_block`, which gathers
+  existing questions into a new block.
+- **Settings:** any field of the format is a keyword: `required=True`,
+  `max_selected=2`, `randomization={"order": "shuffle"}`, `show_if={...}`,
+  `skip=[...]`, `image="images/ad.png"`. Options, rows and items are labels, or
+  objects in the format.
+- **Checks:** every edit is checked as `read_survey` checks a file
+  (`SurveyFormatError`, with the path of each field). An edit that would leave
+  logic reading a question that is gone, or asked later, raises
+  `UnsupportedEdit`. Only what an edit names changes: the rest of the survey,
+  a QSF's included, stays as it was.
+
+`survey.standard` is the result in the standard format; save it as JSON and
+`read_survey` reads it again. Every method, type and setting is in [Editing a
+survey](docs/reference/survey.md#editing-a-survey).
+
+### Drafts from a web form
+
+`surveytwin.builder` makes a survey from a draft, a JSON shape a web form can
+send: a title and a list of questions of seven simple types, in one block.
 
 ```python
 from surveytwin import builder
@@ -554,24 +598,12 @@ survey = builder.build_survey({
 survey = builder.add_questions(survey, [
     {"id": "Q3", "type": "single_choice", "text": "Would you recommend it?", "options": ["Yes", "No"]},
 ], after_question_id="Q2")
-survey = builder.reorder_questions(survey, move=("Q3", "up"))
-plan = st.plan(survey, config)
 ```
 
-- **Question types:** `single_choice`, `multi_select`, `scale`, `grid`,
-  `open_text`, `number`, and `instruction` (text or an image, nothing to answer).
-- **Errors:** a mistake in a draft raises `DraftError`. Its `issues` name the
-  question and field of each problem, so a web form can show them where they
-  belong.
-- **Edits:** `add_questions`, `update_question`, `remove_questions` and
-  `reorder_questions` each return a new survey and never renumber IDs. The survey
-  passed in, and any plan made from it, stay unchanged. An edit that would lose
-  Qualtrics content, or break logic that reads a question, raises
-  `UnsupportedEdit`.
-
-The full guide is [docs/builder.md](docs/builder.md): the draft fields, how each
-type becomes a survey question, every validation rule, what an edit may change
-on an imported survey, images, and a web backend example.
+A mistake in a draft raises `DraftError`, whose `issues` name the question and
+field of each problem, so a web form can show them where they belong.
+`to_draft` gives the survey back as a draft for the form. The full guide is
+[docs/builder.md](docs/builder.md).
 
 ## Objects and functions
 
@@ -583,7 +615,9 @@ every parameter, return value and error, with an example for each.
 
 | Function | Returns | What it does |
 |---|---|---|
+| `read_survey(source, *, folder=None)` | `Survey` | Reads a survey written in the standard format (a `.json` path, bytes, or parsed JSON), checked field by field. |
 | `read_qsf(source, *, exclude_blocks=None, exclude_questions=None)` | `Survey` | Reads a `.qsf` path, bytes, or parsed JSON. `exclude_blocks` drops blocks (as `drop_blocks`); `exclude_questions` leaves questions out, as if they did not exist (see Step 2). Refused when nothing would be left to answer. |
+| `new_survey(title="", *, id=None, description=None, language=None, folder=None)` | `Survey` | An empty survey in the standard format, to fill with `add_question`. |
 | `bank(name_or_path="twin-2k-500")` | `Bank` | Opens the default bank or a Croissant Twins folder or zip. |
 | `configure(*, sample_size, model, ...)` | `RunConfig` | Checks and collects the run settings (table in step 4). |
 | `plan(survey, config, *, mode="auto")` | `Plan` | Samples twins and builds their surveys. `mode="static"` refuses a survey that needs stages; `"staged"` forces stages. |
@@ -597,7 +631,7 @@ every parameter, return value and error, with an example for each.
 
 | Object | You get it from | Holds | Methods |
 |---|---|---|---|
-| `Survey` | `read_qsf`, `builder.build_survey`, `survey.drop_blocks`, the builder's edit functions, `Survey.from_dict`, `results.survey` | `name`, `id`, `language`, `kind` (`qsf`, `builder` or `template`), `questions` (a dict of `Question` by ID), `flow`, `exclude_blocks`, `drop_report`, `embedded_fields`, `edits`, `source`, `checksum`, `unresolved_media` | `check(network=False, embedded_data=None)`, `preview_blocks()`, `drop_blocks(block_ids)`, `to_dict()` |
+| `Survey` | `read_survey`, `read_qsf`, `new_survey`, the edit methods, `survey.drop_blocks`, `builder.build_survey` and its edit functions, `Survey.from_dict`, `results.survey` | `name`, `id`, `language`, `kind` (`standard`, `qsf`, `builder` or `template`), `standard` (the definition), `questions` (a dict of `Question` by ID), `flow`, `exclude_blocks`, `drop_report`, `embedded_fields`, `edits`, `source`, `checksum`, `unresolved_media` | `add_question(type, text, ...)`, `update_question(question_id, ...)`, `move_question(question_id, ...)`, `swap_questions(first, second)`, `remove_question(question_id)`, `add_block(block_id, ...)`, `remove_block(block_id)`, `group_into_block(question_ids, block_id, ...)`, `check(network=False, embedded_data=None)`, `preview_blocks()`, `drop_blocks(block_ids)`, `to_dict()` |
 | `EmbeddedField` | `survey.embedded_fields` | `name`, `source` (set in the flow, from a panel or the survey link, set by JavaScript, never set), `set_in`, `from_outside`, `set_by_javascript`, `read_by`, `variable_type` | |
 | `Question` | `survey.questions[qid]` | `id`, `export_tag`, `type`, `selector`, `text`, `options`, `rows`, `columns`, `display_logic`, `skip_logic`, `validation`, `randomization`, `recode_values`, `media`, `kind` (`answerable`, `descriptive`, `unsupported`, or `timing`, `meta info`, `captcha`) | |
 | `SurveyCheck` | `survey.check()` | `mode`, `staging_reasons`, `findings`, `unsupported_questions`, `images`, `design_cells`, `unset_embedded_fields`, `reads_dropped`, `ok` | |
@@ -605,11 +639,11 @@ every parameter, return value and error, with an example for each.
 | `BlockPreview` | `survey.preview_blocks()` | `block_id`, `name`, `question_counts`, `answerable`, `images`, `screenout`, `dropped`, `referenced_by`, `findings` | |
 | `DropReport` | `survey.drop_report` | `dropped_blocks`, `dropped_questions`, `references` (logic that reads a dropped question), `pruned_branches` | |
 
-### The builder (`from surveytwin import builder`)
+### The draft builder (`from surveytwin import builder`)
 
 | Function | Returns | What it does |
 |---|---|---|
-| `build_survey(draft, *, block_id=None, block_name=None, image_resolver=None, policy=None)` | `Survey` | A survey from a draft (a `SurveyDraft` or its JSON), in block `BL_BUILDER` unless the draft or `block_id` names another. |
+| `build_survey(draft, *, block_id=None, block_name=None, image_resolver=None, policy=None)` | `Survey` | A survey from a draft (a `SurveyDraft` or its JSON), in block `BL_BUILDER` unless the draft or `block_id` names another; a whole survey in the standard format is read as `read_survey` reads it. |
 | `add_questions(survey, questions, *, block_id=None, after_question_id=None, before_question_id=None, image_resolver=None, policy=None)` | `Survey` | Inserts draft questions into a block. |
 | `update_question(survey, question_id, changes=None, **fields)` | `Survey` | Changes one question's fields. |
 | `remove_questions(survey, question_ids)` | `Survey` | Removes questions; refused while logic reads them. |

@@ -213,7 +213,7 @@ def test_the_qsf_refusal_counts_each_question_once():
     data = write_qsf("Twice", [{"id": "A", "type": "open_text", "text": "A?"}, {"id": "B", "type": "open_text", "text": "B?"}])
     flow = next(e for e in data["SurveyElements"] if e["Element"] == "FL")["Payload"]["Flow"]
     flow.append(dict(flow[0], FlowID="FL_3"))  # the block is shown twice
-    with pytest.raises(st.UnsupportedEdit, match="2 question\\(s\\) were read from a QSF and have no draft form: A, B$"):
+    with pytest.raises(st.UnsupportedEdit, match="2 question\\(s\\) have no draft form \\(read from a QSF or a survey file, or added with Survey.add_question\\): A, B$"):
         builder.to_draft(st.read_qsf(data))
 
 

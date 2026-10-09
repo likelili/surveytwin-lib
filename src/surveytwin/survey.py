@@ -592,13 +592,25 @@ def _javascript_computing_field_names(qsf: dict[str, Any] | None, question_ids: 
 # ---------------------------------------------------------------------------
 
 
+class _Unchanged:
+    """The default of ``Survey.update_question``'s parameters: leave that part as it is."""
+
+    def __repr__(self) -> str:
+        return "unchanged"
+
+
+_UNCHANGED: Any = _Unchanged()
+
+
 class Survey:
     """One survey: its definition in the standard format, which every run reads, and
     views of its flow, blocks and questions.
 
-    Get one from ``read_qsf`` (a Qualtrics export) or ``surveytwin.builder``
-    (a survey written in Python or sent by a web form). A survey never changes:
-    ``drop_blocks`` and the builder's edit functions return a new one.
+    Get one from ``read_survey`` (a survey written in the standard format),
+    ``read_qsf`` (a Qualtrics export), ``new_survey`` (an empty survey to fill), or
+    ``surveytwin.builder.build_survey`` (a web form's draft). A survey never
+    changes: ``add_question`` and the other edit methods, ``drop_blocks`` and the
+    draft builder's edit functions return a new one.
     """
 
     def __init__(
@@ -651,6 +663,10 @@ class Survey:
         # Warnings from reading a survey written in the standard format (a variable
         # never set, a block never shown); not part of its definition.
         self.read_warnings: list[Any] = []
+        # Where a picture path an edit names starts when it is relative: the folder
+        # of the survey's JSON file (or read_survey's ``folder``); None for the
+        # current folder. Not saved with the survey.
+        self._picture_folder: Path | None = None
 
     def _derive(self, **changes: Any) -> "Survey":
         """A new Survey with some fields replaced (the others carried over)."""
@@ -670,7 +686,9 @@ class Survey:
         }
         fields.update(changes)
         template = fields.pop("template")
-        return Survey(template, **fields)
+        survey = Survey(template, **fields)
+        survey._picture_folder = self._picture_folder
+        return survey
 
     @cached_property
     def _base_template(self) -> dict[str, Any]:
@@ -695,10 +713,18 @@ class Survey:
         return self._with_pictures(self.standard)
 
     @property
+    def _definition_edited(self) -> bool:
+        """The last edit was made on the definition (``add_question`` and the other
+        edit methods): the definition kept is the survey as it is now, and its
+        template is compiled from it. An edit of the draft builder changes the
+        template instead, and the definition is then read from the template."""
+        return bool(self.edits) and self.edits[-1].get("on") == "definition"
+
+    @property
     def _written(self) -> bool:
-        """Written in the standard format and not edited since: the definition as
-        read is the survey, and its template only a view of it."""
-        return self.kind == "standard" and self._standard is not None and not self.edits
+        """Written in the standard format and not edited since, or edited only on its
+        definition: the definition is the survey, and its template only a view of it."""
+        return self.kind == "standard" and self._standard is not None and (not self.edits or self._definition_edited)
 
     # -- saving -----------------------------------------------------------------
 
@@ -731,6 +757,8 @@ class Survey:
                     "source_base64": base64.b64encode(self._raw_bytes).decode("ascii") if self._raw_bytes else "",
                 }
                 if self.kind == "standard" and self._standard is not None
+                else {"standard": copy.deepcopy(self._standard)}
+                if self._definition_edited
                 else {}
             ),
         }
@@ -785,6 +813,8 @@ class Survey:
             "unresolved_media": self._unresolved_media,
             "edits": self.edits,
         }
+        if self._definition_edited:
+            definition["standard"] = self._standard
         if self._pictures:
             definition["pictures"] = self._picture_digests()
         canonical = json.dumps(definition, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
@@ -797,7 +827,7 @@ class Survey:
     # -- identity ---------------------------------------------------------------
 
     def __repr__(self) -> str:
-        return f"Survey({self.name!r}, {len(self.questions)} questions, {len(self.blocks)} blocks)"
+        return f"Survey({self.name!r}, {plural(len(self.questions), 'question')}, {plural(len(self.blocks), 'block')})"
 
     @property
     def qsf(self) -> dict[str, Any] | None:
@@ -821,10 +851,15 @@ class Survey:
 
     @cached_property
     def checksum(self) -> str:
-        """SHA-256 of the QSF file as read; for a built or edited survey, of its
-        template. A survey that names picture files also covers the pictures as read."""
+        """SHA-256 of the QSF file as read; for a survey edited with ``add_question``
+        and the other edit methods, of its definition; for another built or edited
+        survey, of its template. A survey that names picture files also covers the
+        pictures as read."""
         if self.kind in {"qsf", "standard"} and not self.edits and self._raw_bytes:
             digest = hashlib.sha256(self._raw_bytes).hexdigest()
+        elif self._definition_edited:
+            canonical = json.dumps(self._standard, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+            digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         else:
             canonical = json.dumps(self._base_template, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
             digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -907,8 +942,11 @@ class Survey:
     @cached_property
     def _standard_full(self) -> dict[str, Any]:
         """The whole survey in the standard format, before blocks are dropped: as
-        read when nothing was edited or excluded since, else read from its template."""
-        if self._standard is not None and not self.edits and not self.exclude_questions:
+        read when nothing was edited or excluded since, as edited when the last edit
+        was made on it, else read from its template."""
+        if self._standard is not None and (self._definition_edited or (not self.edits and not self.exclude_questions)):
+            # (an edit on the definition started from the survey with its excluded
+            # questions already taken out)
             return self._standard
         from .spec.read_template import survey_from_template
 
@@ -1038,6 +1076,143 @@ class Survey:
             # The rule building and editing apply: a survey keeps something to answer.
             raise _no_answerable_error(f"Dropping {', '.join(requested)} would leave no answerable question.")
         return dropped
+
+    # -- editing ---------------------------------------------------------------------
+
+    def add_question(
+        self,
+        type: str,
+        text: Any = None,
+        *,
+        id: str | None = None,
+        block: str | None = None,
+        position: int | None = None,
+        after: str | None = None,
+        before: str | None = None,
+        image: Any = None,
+        options: Any = None,
+        rows: Any = None,
+        columns: Any = None,
+        scale: Any = None,
+        items: Any = None,
+        fields: Any = None,
+        **settings: Any,
+    ) -> "Survey":
+        """A new Survey with one more question, written into the definition.
+
+        ``type`` is one of ``instruction``, ``single_choice``, ``multiple_choice``,
+        ``text``, ``number``, ``grid``, ``number_grid``, ``text_grid``,
+        ``sum_grid``, ``form``, ``ranking``, ``allocation``, ``side_by_side``.
+        ``options``, ``rows``, ``columns``, ``scale``, ``items`` and ``fields``
+        are lists of labels (each gets the ID of its place: "1", "2", ...) or of
+        objects in the standard format. Any other field of the question or its
+        response is a keyword (``required=True``, ``max_selected=2``,
+        ``show_if={...}``). The question goes into ``block`` at ``position`` (1
+        is first), or next to the question ``after`` or ``before`` names, or last
+        in the survey's only block (a survey with none gets block "main"). See
+        docs/reference/survey.md."""
+        from .builder.standard import add_question
+
+        return add_question(
+            self, type, text, id=id, block=block, position=position, after=after, before=before, image=image,
+            options=options, rows=rows, columns=columns, scale=scale, items=items, fields=fields, **settings,
+        )
+
+    def update_question(
+        self,
+        question_id: str,
+        *,
+        type: Any = _UNCHANGED,
+        text: Any = _UNCHANGED,
+        image: Any = _UNCHANGED,
+        options: Any = _UNCHANGED,
+        rows: Any = _UNCHANGED,
+        columns: Any = _UNCHANGED,
+        scale: Any = _UNCHANGED,
+        items: Any = _UNCHANGED,
+        fields: Any = _UNCHANGED,
+        **settings: Any,
+    ) -> "Survey":
+        """A new Survey with a question changed: only what is given changes. A
+        setting given as None is removed (``show_if=None``); ``image=None`` removes
+        the question's pictures. A new ``type`` keeps the lists and the required
+        setting the new type also takes; it is refused when other parts of the
+        survey read the question and the new type answers differently."""
+        from .builder.standard import update_question
+
+        return update_question(
+            self, question_id, type=type, text=text, image=image, options=options, rows=rows, columns=columns,
+            scale=scale, items=items, fields=fields, **settings,
+        )
+
+    def move_question(
+        self,
+        question_id: str,
+        *,
+        block: str | None = None,
+        position: int | None = None,
+        after: str | None = None,
+        before: str | None = None,
+    ) -> "Survey":
+        """A new Survey with a question moved: into ``block`` (at ``position``, 1
+        is first, or last), to another ``position`` in its block, or next to the
+        question ``after`` or ``before`` names. Refused when logic or piped text
+        would then read a question asked after it."""
+        from .builder.standard import move_question
+
+        return move_question(self, question_id, block=block, position=position, after=after, before=before)
+
+    def swap_questions(self, first: str, second: str) -> "Survey":
+        """A new Survey where two questions trade places (in one block or two)."""
+        from .builder.standard import swap_questions
+
+        return swap_questions(self, first, second)
+
+    def remove_question(self, question_id: str) -> "Survey":
+        """A new Survey without the question. Refused while other parts of the
+        survey (conditions, skips, piped text, set values) read it."""
+        from .builder.standard import remove_question
+
+        return remove_question(self, question_id)
+
+    def add_block(
+        self,
+        block_id: str,
+        *,
+        title: str | None = None,
+        position: int | None = None,
+        after: str | None = None,
+        before: str | None = None,
+    ) -> "Survey":
+        """A new Survey with an empty block, shown in the flow next to the block
+        ``after`` or ``before`` names, at ``position`` in the top level of the
+        flow (1 is first), or last."""
+        from .builder.standard import add_block
+
+        return add_block(self, block_id, title=title, position=position, after=after, before=before)
+
+    def remove_block(self, block_id: str) -> "Survey":
+        """A new Survey without the block, its questions and the steps that show it.
+        Refused while other parts of the survey read its questions."""
+        from .builder.standard import remove_block
+
+        return remove_block(self, block_id)
+
+    def group_into_block(
+        self,
+        question_ids: list[str],
+        block_id: str,
+        *,
+        title: str | None = None,
+        after: str | None = None,
+        before: str | None = None,
+    ) -> "Survey":
+        """A new Survey where existing questions are gathered, in the order listed,
+        into a new block. The block is shown right after the block of the first
+        question listed, or next to the block ``after`` or ``before`` names."""
+        from .builder.standard import group_into_block
+
+        return group_into_block(self, question_ids, block_id, title=title, after=after, before=before)
 
     @cached_property
     def _answerable_count(self) -> int:
@@ -1491,6 +1666,7 @@ def read_survey(source: str | Path | bytes | dict[str, Any], *, folder: str | Pa
         pictures=pictures,
     )
     survey.read_warnings = [f for f in findings if f.level == "warning"]
+    survey._picture_folder = base.resolve()
     if not survey._answerable_count:
         raise _no_answerable_error("The survey has no question a twin can answer.")
     return survey

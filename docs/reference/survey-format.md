@@ -52,7 +52,7 @@ print(survey, survey.kind)
 ```
 
 ```
-Survey('Pets', 2 questions, 1 blocks) standard
+Survey('Pets', 2 questions, 1 block) standard
 ```
 
 ## How a survey is checked

@@ -38,9 +38,21 @@ def build_survey(
     ``DraftError``, whose ``issues`` name each question and field; warnings do not
     stop the build (see them with ``validate_draft``).
 
+    A dict with ``schema_version`` is a whole survey in the standard format: it
+    is read as ``read_survey`` reads it (relative picture paths from the current
+    folder), and the draft options do not apply to it.
+
     No model call, no persona, no file is written.
     """
     from .validate import next_qid_floor, payload_shape_issues
+
+    if isinstance(draft, dict) and "schema_version" in draft:
+        given = [name for name, value in (("block_id", block_id), ("block_name", block_name), ("image_resolver", image_resolver), ("policy", policy)) if value is not None]
+        if given:
+            raise SurveyError(f"build_survey: {', '.join(given)} apply to a draft, not to a survey in the standard format.")
+        from ..survey import read_survey
+
+        return read_survey(draft)
 
     shape = payload_shape_issues(draft)
     if shape:
@@ -110,7 +122,8 @@ def to_draft(survey: Survey) -> SurveyDraft:
     form never takes the ID of one removed or dropped before.
 
     Raises ``UnsupportedEdit`` when the draft form cannot hold the survey
-    faithfully: a question read from a QSF, anything besides one plain block of
+    faithfully: a question not made from a draft (read from a QSF or a survey
+    file, or added with ``Survey.add_question``), anything besides one plain block of
     questions (more blocks, a block shown more than once, branches, randomizers,
     embedded data, loops, question randomization, other survey parts such as web
     services), a question changed outside the builder (it no longer matches its
@@ -132,7 +145,8 @@ def to_draft(survey: Survey) -> SurveyDraft:
     ))
     if read_from_qsf:
         raise UnsupportedEdit(
-            f"{len(read_from_qsf)} question(s) were read from a QSF and have no draft form: {', '.join(read_from_qsf[:10])}"
+            f"{len(read_from_qsf)} question(s) have no draft form (read from a QSF or a survey file, or added with "
+            f"Survey.add_question): {', '.join(read_from_qsf[:10])}"
         )
     blocks = [e for e in elements if e.get("ElementType") == "Block"]
     others = sorted({str(e.get("ElementType")) if e.get("ElementType") else "a flow element the builder cannot represent" for e in elements if e.get("ElementType") != "Block"})

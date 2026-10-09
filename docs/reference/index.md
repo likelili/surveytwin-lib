@@ -3,8 +3,9 @@
 This is the complete reference of the `surveytwin` library: every function,
 class, method, setting and command, with what it takes, what it returns, what it
 refuses, and a runnable example. For a walk-through from a survey file to
-results, start with the [README](../README.md); for building surveys in Python,
-see [Building surveys without Qualtrics](../builder.md).
+results, start with the [README](../../README.md); for writing and editing a
+survey in Python, see [Editing a survey](survey.md#editing-a-survey); for the
+draft builder a web form uses, [Building surveys without Qualtrics](../builder.md).
 
 ## A run, step by step
 
@@ -26,14 +27,14 @@ run(plan)              ->  Results     every answer, the export files, the repor
 | Page | What it covers |
 |---|---|
 | [The standard survey format](survey-format.md) | Writing a survey as JSON: questions, responses, conditions, blocks, flow, checks; how a QSF reads into it |
-| [Reading and checking a survey](survey.md) | `read_survey`, `read_qsf`, `Survey` and what it reports: blocks, questions, embedded data, the check, dropping blocks |
+| [Reading, editing and checking a survey](survey.md) | `read_survey`, `read_qsf`, `new_survey`, `Survey` and what it reports: blocks, questions, embedded data, the check, dropping blocks; adding, changing, moving and removing questions and blocks |
 | [Persona banks](personas.md) | `bank`, `Bank`, representations, filters, the audience preview, `Twin` |
 | [Configuring and planning a run](configure-and-plan.md) | `configure`, `RunConfig`, `plan`, `Plan`, prompt previews |
 | [Running a plan](running.md) | `run`, `arun`, API keys, static and staged runs, flagged answers, images, usage records, `surveytwin.batch` |
 | [Models](models.md) | `Model` presets and defined models, `env`, `ModelRequest`, `Reply`, `ModelCheck` |
 | [Results and export files](results.md) | `Results`, `Answer`, reruns, and every file in a run folder |
 | [Prompt texts](prompts.md) | `surveytwin.prompts`: the texts every prompt is built from |
-| [The survey builder](builder.md) | `surveytwin.builder`: drafts, building and editing surveys |
+| [The draft builder](builder.md) | `surveytwin.builder`: a web form's drafts, building surveys from them and editing them |
 | [Command line](command-line.md) | the `surveytwin` command and every option |
 | [Errors](errors.md) | every error class and when it is raised |
 
@@ -43,6 +44,7 @@ run(plan)              ->  Results     every answer, the export files, the repor
 |---|---|
 | [`surveytwin.read_survey`](survey.md#read_survey) | function |
 | [`surveytwin.read_qsf`](survey.md#read_qsf) | function |
+| [`surveytwin.new_survey`](survey.md#new_survey) | function |
 | [`surveytwin.bank`](personas.md#bank) | function |
 | [`surveytwin.configure`](configure-and-plan.md#configure) | function |
 | [`surveytwin.plan`](configure-and-plan.md#plan) | function |

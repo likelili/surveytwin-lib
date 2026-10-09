@@ -2,8 +2,10 @@
 
 A run starts with a survey. `read_survey` reads a survey written in [the
 standard format](survey-format.md); `read_qsf` reads a Qualtrics export (a `.qsf`
-file) into that format; [the builder](builder.md) makes the same object from a
-draft.
+file) into that format; `new_survey` starts an empty one; [the draft
+builder](builder.md) makes the same object from a web form's draft.
+`Survey.add_question` and the other [edit methods](#editing-a-survey) change a
+survey's definition: add, change, move and remove questions and blocks.
 Before you plan a run, the survey tells you how it will run and what the library
 does with each Qualtrics feature it uses (`Survey.check`), lists its blocks
 (`Survey.preview_blocks`), and leaves out blocks that twins should not answer
@@ -145,17 +147,66 @@ Survey('Coffee habits', 14 questions, 7 blocks) standard
 ['screen', 'habits', 'message_a_block', 'message_b_block', 'reaction', 'drinks', 'goodbye']
 ```
 
+## `new_survey`
+
+```python
+surveytwin.new_survey(
+    title: str = "",
+    *,
+    id: str | None = None,
+    description: str | None = None,
+    language: str | None = None,
+    folder: str | Path | None = None,
+) -> Survey
+```
+
+An empty survey in the standard format, to fill with `Survey.add_question` and
+the other [edit methods](#editing-a-survey). It has no question yet, so `plan`
+refuses it until one is added.
+
+**Parameters**
+
+- `title` (`str`, default `""`): the survey's title (its `name`).
+- `id` (`str | None`, default `None`): the survey's ID in the format; `None`
+  makes one from the title (`"Coffee habits"` gives `coffee_habits`), or
+  `survey`.
+- `description` (`str | None`, default `None`): a description, kept in the
+  definition.
+- `language` (`str | None`, default `None`): a language code, such as `"EN"`.
+- `folder` (`str | Path | None`, default `None`): where a relative picture path
+  that an edit names starts; `None` is the current folder.
+
+**Returns** `Survey`, with `kind` `"standard"`.
+
+**Raises** `SurveyFormatError`: the ID has a space in it.
+
+**Example**
+
+```python
+import surveytwin as st
+
+survey = st.new_survey("Coffee habits")
+print(survey, survey.kind)
+print(survey.standard)
+```
+
+```
+Survey('Coffee habits', 0 questions, 0 blocks) standard
+{'schema_version': '0.1', 'id': 'coffee_habits', 'title': 'Coffee habits', 'questions': [], 'blocks': [], 'flow': []}
+```
+
 ## `Survey`
 
 One survey: its definition in the standard format, which planning, prompts and
 exports run on, and views of its flow, blocks and questions in Qualtrics' terms.
-You get one from `read_survey`, `read_qsf`, from the builder
-(`builder.build_survey` and the edit functions), from `Survey.drop_blocks`, from
-`Survey.from_dict`, or from a saved run (`results.survey`).
+You get one from `read_survey`, `read_qsf`, `new_survey`, the edit methods
+(`Survey.add_question` and the others), the draft builder
+(`builder.build_survey` and its edit functions), `Survey.drop_blocks`,
+`Survey.from_dict`, or a saved run (`results.survey`).
 
-A survey never changes. `drop_blocks` and the builder's edit functions return a
-new survey; the survey you started from, and any plan made from it, stay as
-they were. The dicts and lists that the properties return are for reading:
+A survey never changes. The edit methods, `drop_blocks` and the draft builder's
+edit functions return a new survey; the survey you started from, and any plan
+made from it, stay as they were. The dicts and lists that the properties return are for reading:
 changing them is not a way to edit a survey.
 
 Printing a survey shows its name and how many questions and blocks it has now,
@@ -172,8 +223,8 @@ dropped blocks and the questions excluded when it was read.
 | `id` | `str` | The Qualtrics survey ID (`SV_...`) from the metadata; empty when there is none, as for a built survey. |
 | `language` | `str` | The language code in the metadata (`"EN"`), or empty. |
 | `metadata` | `dict[str, Any]` | A copy of the template's metadata: the survey's ID, name, description, language and dates, as the QSF gives them. |
-| `kind` | `str` | Where the survey came from: `"standard"` (`read_survey`), `"qsf"` (`read_qsf`), `"builder"` (the builder) or `"template"` (made with `Survey(...)`). Recorded with results. |
-| `standard` | `dict[str, Any]` | The survey in [the standard format](survey-format.md), as it runs: planning, prompts and exports read it. Dropped blocks and excluded questions are left out, edits applied. A survey written in the format is the survey as written, less its dropped blocks; one read from a QSF is as read, or read again after an edit. A copy. |
+| `kind` | `str` | Where the survey came from: `"standard"` (`read_survey`, `new_survey`), `"qsf"` (`read_qsf`), `"builder"` (the draft builder) or `"template"` (made with `Survey(...)`). An edit keeps it. Recorded with results. |
+| `standard` | `dict[str, Any]` | The survey in [the standard format](survey-format.md), as it runs: planning, prompts and exports read it. Dropped blocks and excluded questions are left out, edits applied. A survey written in the format is the survey as written, less its dropped blocks; one read from a QSF is as read. The edit methods change it directly; after an edit of the draft builder, it is read again from the template. A copy. |
 | `read_warnings` | `list` | The warnings `read_survey` found (each with `path`, `message`, `code` and `level`); empty for other surveys. Not part of the survey's definition. |
 | `source_name` | `str` | The file name when the QSF was read from a path (empty when read from bytes or parsed JSON); the draft's title for a built survey. |
 | `questions` | `dict[str, Question]` | Every question by internal ID (`"QID56"`), in flow order. A block shown twice in the flow gives its questions once. |
@@ -184,13 +235,13 @@ dropped blocks and the questions excluded when it was read.
 | `exclude_blocks` | `list[str]` | The IDs of the dropped blocks, sorted. |
 | `exclude_questions` | `list[str]` | The internal IDs of the questions excluded when the survey was read, sorted. |
 | `drop_report` | `DropReport` | What the dropped blocks and excluded questions removed, and what in the rest of the survey still reads a dropped question. |
-| `checksum` | `str` | The SHA-256 digest (hex) of the QSF file, or the standard-format file, as read. For a built survey, or one changed with the builder's edit functions, the digest of its template. Dropping blocks does not change it. When `read_qsf` was given parsed JSON, the digest is of that JSON written out again, so it differs from the file's. |
+| `checksum` | `str` | The SHA-256 digest (hex) of the QSF file, or the standard-format file, as read. For a survey changed with the edit methods, the digest of its definition; for one built or changed with the draft builder, of its template. A survey that names picture files covers the pictures too. Dropping blocks does not change it. When `read_qsf` was given parsed JSON, the digest is of that JSON written out again, so it differs from the file's. |
 | `source` | `dict[str, Any]` | Where the survey came from and what changed since: `kind`, `name` (the `source_name`), `checksum_sha256` and `edits`. |
 | `qsf` | `dict[str, Any] \| None` | A copy of the QSF as read, before any drop or edit; `None` for a built survey. |
 | `raw_bytes` | `bytes` | The bytes of the QSF file as read (for parsed JSON, that JSON written out again); empty for a built survey. |
-| `edits` | `list[dict[str, Any]]` | The builder edits made since the survey was read or built, in order, one dict each, for example `{"op": "update_question", "qid": "QID56", "question": "KS_MC_Q1", "fields": ["text"]}`. Saved with results. |
+| `edits` | `list[dict[str, Any]]` | The edits made since the survey was read or built, in order, one dict each: an edit method's has `"on": "definition"`, for example `{"op": "update_question", "on": "definition", "question": "cups", "changed": ["max", "text"]}`; a draft builder edit's, for example, `{"op": "update_question", "qid": "QID56", "question": "KS_MC_Q1", "fields": ["text"]}`. Saved with results. |
 | `edited` | `bool` | `True` when `edits` is not empty. Dropping blocks is not an edit. |
-| `edit_warnings` | `list[DraftIssue]` | Warnings from the builder edit that made this survey, such as a policy's warning about a demographic question. They are not part of the survey's definition: `to_dict` leaves them out. |
+| `edit_warnings` | `list` | Warnings from the edit that made this survey: for an edit method, the new warnings in the definition (each with `path`, `message`, `code` and `level`, as `read_warnings`); for a draft builder edit, `DraftIssue`s such as a policy's warning about a demographic question. They are not part of the survey's definition: `to_dict` leaves them out. |
 | `unresolved_media` | `list[dict[str, Any]]` | Image references in builder questions that the image resolver could not turn into an image, for questions still in the survey. Each has `question_id`, `question` (the export tag), `reference`, `name` and `detail` (why it did not resolve). |
 
 **Example**
@@ -433,6 +484,515 @@ print(trimmed.exclude_blocks, trimmed.checksum == survey.checksum)
 Survey('Untitled project', 36 questions, 12 blocks)
 Survey('Untitled project', 25 questions, 11 blocks)
 ['BL_KS_MC_1'] True
+```
+
+### Editing a survey
+
+Eight methods edit a survey's definition (`survey.standard`) directly: add,
+change, move, swap and remove questions; add and remove blocks; gather
+questions into a new block. Each returns a new survey; the survey you call it
+on, and any plan made from it, do not change. They work the same on a survey
+written in the standard format, one read from a QSF, one started with
+`new_survey`, and one built from a draft.
+
+```python
+import surveytwin as st
+
+survey = st.new_survey("Coffee habits")
+survey = survey.add_question("single_choice", "Do you drink coffee?", options=["Yes", "No"], id="drinks", required=True)
+survey = survey.add_question("number", "How many cups on a typical day?", id="cups", min=0, max=12,
+                             show_if={"op": "selected", "question": "drinks", "option": "1"})
+survey = survey.add_question("grid", "How important is each when you buy coffee?", id="importance",
+                             rows=["Price", "Taste"], scale=["Not important", "Somewhat important", "Very important"])
+print(survey)
+print(survey.standard["blocks"])
+```
+
+```
+Survey('Coffee habits', 3 questions, 1 block)
+[{'id': 'main', 'kind': 'survey', 'questions': ['drinks', 'cups', 'importance']}]
+```
+
+What every edit does:
+
+- **Only what it names changes.** Every other question, block and flow step
+  stays as it was, field for field, and so does everything a QSF reader kept.
+  Adding one question to `examples/survey-format/coffee-habits.json` changes two
+  places: the new question and its block's list.
+- **The result is checked as `read_survey` checks a file.** An edit that leaves
+  an error in the definition raises `SurveyFormatError`, with the path of each
+  field (`$.questions[2].response.max_selected`). So does an edit that names a
+  picture file that cannot be read, or one that would give two CSV columns the
+  same name. Only problems the edit makes are refused: a QSF's own oddities do
+  not stop later edits. New warnings (a variable never set) are in
+  `edit_warnings`.
+- **Logic keeps reading earlier questions.** An edit is refused
+  (`UnsupportedEdit`) when it would leave a condition, a skip rule, piped text,
+  a value set in the flow or a repeat's rows reading a question that is gone,
+  or one asked only after it in the flow as written. The message lists each
+  one.
+- **Dropped blocks are left alone.** An edit that touches a dropped block, or
+  adds questions to a conjoint or MaxDiff block (whose tasks are drawn from its
+  definition), raises `SurveyError`.
+- **Each edit is recorded** in `edits`, for example
+  `{"op": "add_question", "on": "definition", "question": "cups", "type": "number", "block": "main", "position": 2}`,
+  and saved with results.
+
+Picture files a question names (`image="images/ad.png"`, or a `media` entry of an
+option) are read when the edit is made: an absolute path as written, a relative
+path from the folder of the survey's JSON file (`read_survey`), the `folder`
+given to `new_survey`, or else the current folder. A missing file is refused.
+
+#### Question types
+
+`add_question` (and `update_question`'s `type`) take these types. Each becomes a
+question of [the standard format](survey-format.md):
+
+| Type | The question's `response` | Lists it takes |
+|---|---|---|
+| `instruction` | none: shown, never answered | |
+| `single_choice` | `choice`, `mode: "single"` | `options` |
+| `multiple_choice` | `choice`, `mode: "multiple"` | `options` |
+| `text` | `text` | |
+| `number` | `number` | |
+| `grid` | `matrix`, `per_row`, a single choice per row | `rows`, `scale` |
+| `number_grid` | `matrix`, `per_row`, a number per row | `rows` |
+| `text_grid` | `matrix`, `per_cell`, text in each cell | `rows`, `columns` |
+| `sum_grid` | `matrix`, `per_cell`, numbers adding to `total` across each row (100 unless given; `axis="column"` adds down each column) | `rows`, `columns` |
+| `form` | `form` | `fields` |
+| `ranking` | `ranking` | `items` |
+| `allocation` | `allocation` (`total` 100 unless given) | `items` |
+| `side_by_side` | `group`, `layout: "side_by_side"`: each column a grid of the shared `rows`, on its own scale | `rows`, `columns` (each `{"label": ..., "scale": [...]}`, or a column in the format with its own `response`) |
+
+A list is labels (`["Yes", "No"]`; each gets the ID of its place, `"1"`, `"2"`,
+...) or objects in the format (`{"id": "y", "label": "Yes", "code": 1}`), or
+both. `options` and `scale` also take the name of a scale in
+`builder.SCALE_PRESETS` (`"agreement_5"`).
+
+#### Settings
+
+Any other keyword sets a field of the question or of its response, by its name
+in the format:
+
+- the question's own fields: `export_name`, `show_if`, `skip`, `presentation`,
+  and `control` (short for `presentation={"control": ...}`), and `content` (the
+  whole content list, in place of `text` and `image`);
+- the response's fields, such as `required`, `min_selected`, `max_selected`,
+  `randomization`, `default`, `min_length`, `max_length`, `format`, `min`,
+  `max`, `step`, `decimals`, `not_applicable`, `min_ranked`, `max_ranked` and
+  `total`. On a grid or form, a field only the answer of each row, cell or field
+  takes goes there: `min` and `max` of a `number_grid` set its `row_response`,
+  `max_length` of a `text_grid` its `cell_response`.
+
+A keyword the type does not take is refused, with the list of those it takes.
+
+### `Survey.add_question`
+
+```python
+Survey.add_question(
+    type: str,
+    text: Any = None,
+    *,
+    id: str | None = None,
+    block: str | None = None,
+    position: int | None = None,
+    after: str | None = None,
+    before: str | None = None,
+    image: Any = None,
+    options: Any = None,
+    rows: Any = None,
+    columns: Any = None,
+    scale: Any = None,
+    items: Any = None,
+    fields: Any = None,
+    **settings: Any,
+) -> Survey
+```
+
+Returns a new survey with one more question, written into the definition.
+
+**Parameters**
+
+- `type` (`str`): one of the [question types](#question-types).
+- `text` (`Any`, default `None`): what the question says: a string, `{"parts":
+  [...]}` for text that pipes a value, a `text` or `table` content item, or a
+  list of these. An `instruction` may have only a picture.
+- `id` (`str | None`, default `None`): the question's ID (text without spaces).
+  `None` gives `Q<n>`, one past every `Q<n>` the survey uses as an ID or export
+  name, or used before an edit removed it.
+- `block` (`str | None`, default `None`): the block to add it to. `None` means
+  the block of the question `after` or `before` names, or the survey's only
+  block; a survey with no block gets one, `main`, shown at the end of the flow.
+  A survey with several blocks needs `block`, `after` or `before`.
+- `position` (`int | None`, default `None`): where in the block, 1 for first.
+  `None` adds it last.
+- `after` (`str | None`, default `None`): a question to put it right after (its
+  ID, or its export name).
+- `before` (`str | None`, default `None`): a question to put it right before.
+  Give one of `position`, `after` and `before`.
+- `image` (`Any`, default `None`): a picture shown after the text: a web link, a
+  `data:` address, the path of a picture file, `{"source": ..., "alt": ...}`, or
+  a list of these.
+- `options` (`Any`, default `None`): the options of a choice question.
+- `rows` (`Any`, default `None`): the statements of a grid or side-by-side
+  question.
+- `columns` (`Any`, default `None`): the columns of a `text_grid`, `sum_grid` or
+  `side_by_side` question.
+- `scale` (`Any`, default `None`): the scale points of a `grid`.
+- `items` (`Any`, default `None`): the items of a ranking or allocation.
+- `fields` (`Any`, default `None`): the text boxes of a form.
+- `**settings`: any other field of the question or its response (see
+  [Settings](#settings)).
+
+**Returns** `Survey`.
+
+**Raises**
+
+- `SurveyError`: an unknown type or setting, a list the type needs is missing,
+  an ID already taken, a question with neither text nor a picture, or a place
+  that cannot be found.
+- `SurveyFormatError`: the question leaves an error in the definition (for
+  example `max_selected` larger than the number of options, or two options with
+  the same label), a picture file cannot be read, or a CSV column name would
+  repeat.
+- `UnsupportedEdit`: its logic reads a question asked after it.
+
+**Example**
+
+```python
+import surveytwin as st
+
+survey = st.read_survey("examples/survey-format/coffee-habits.json")
+edited = survey.add_question("text", "What would make you bring your own cup?", block="reaction", after="own_cup")
+print(next(b for b in edited.standard["blocks"] if b["id"] == "reaction"))
+```
+
+```
+{'id': 'reaction', 'kind': 'survey', 'title': 'Reaction', 'questions': ['own_cup', 'Q11', 'price_fair']}
+```
+
+The new question is `Q11` because the survey's export names run to `Q10`.
+
+### `Survey.update_question`
+
+```python
+Survey.update_question(
+    question_id: str,
+    *,
+    type: Any = unchanged,
+    text: Any = unchanged,
+    image: Any = unchanged,
+    options: Any = unchanged,
+    rows: Any = unchanged,
+    columns: Any = unchanged,
+    scale: Any = unchanged,
+    items: Any = unchanged,
+    fields: Any = unchanged,
+    **settings: Any,
+) -> Survey
+```
+
+Returns a new survey with one question changed. Only what you give changes; a
+parameter left out stays as it is.
+
+**Parameters**
+
+- `question_id` (`str`): the question's ID, or its export name when only one
+  question has it.
+- `type` (`Any`): a new [question type](#question-types). The new response keeps
+  the lists and the `required` setting the new type also takes (a single choice's
+  options become a multiple choice's options, an allocation's items a ranking's
+  items); give the others. When the answer becomes another kind (a choice
+  becomes text, say), the question's presentation goes, and for a question read
+  from a QSF, the Qualtrics settings of the old answer go too. Refused when other
+  parts of the survey read the question and the new kind would answer them
+  differently, and when the question has skip rules but `skip` is not given.
+- `text` (`Any`): new text, in place of the text the question shows; its
+  pictures stay.
+- `image` (`Any`): new pictures, in place of the old; `None` removes them.
+- `options`, `rows`, `columns`, `scale`, `items`, `fields` (`Any`): a new list,
+  in place of the old one. For a question read from a QSF, Qualtrics' own copy
+  of the old list (side-by-side statements) goes with it.
+- `**settings`: any setting `add_question` takes. `None` removes the setting
+  (`show_if=None`, `required=None`). A question's ID cannot change.
+
+**Returns** `Survey`.
+
+**Raises**
+
+- `SurveyError`: an unknown question, type or setting, nothing to change, or an
+  `id` given.
+- `SurveyFormatError`: the change leaves an error in the definition, for example
+  a condition elsewhere names an option that is gone.
+- `UnsupportedEdit`: a new kind of answer for a question other parts read, or a
+  new display condition that reads a later question.
+
+**Example**
+
+```python
+import surveytwin as st
+
+survey = st.new_survey("Coffee habits")
+survey = survey.add_question("number", "How many cups on a typical day?", id="cups", min=0, max=12)
+survey = survey.update_question("cups", text="How many cups on a weekday?", max=20)
+print(survey.standard["questions"][0])
+print(survey.edits[-1])
+```
+
+```
+{'id': 'cups', 'content': [{'type': 'text', 'text': 'How many cups on a weekday?'}], 'response': {'type': 'number', 'min': 0, 'max': 20}}
+{'op': 'update_question', 'on': 'definition', 'question': 'cups', 'changed': ['max', 'text']}
+```
+
+### `Survey.move_question`
+
+```python
+Survey.move_question(
+    question_id: str,
+    *,
+    block: str | None = None,
+    position: int | None = None,
+    after: str | None = None,
+    before: str | None = None,
+) -> Survey
+```
+
+Returns a new survey with one question moved, within its block or to another.
+
+**Parameters**
+
+- `question_id` (`str`): the question to move.
+- `block` (`str | None`, default `None`): the block to move it to; `None` keeps
+  its block (or takes the block of `after` or `before`).
+- `position` (`int | None`, default `None`): its place in the block after the
+  move, 1 for first; `None` puts it last when `block` is given.
+- `after` (`str | None`, default `None`): a question to put it right after.
+- `before` (`str | None`, default `None`): a question to put it right before.
+  Give at least one of these four, and one of `position`, `after`, `before`.
+
+**Returns** `Survey`.
+
+**Raises**
+
+- `SurveyError`: an unknown question or block, a dropped block, or no place
+  given.
+- `UnsupportedEdit`: logic or piped text would then read a question asked after
+  it.
+
+**Example**
+
+```python
+import surveytwin as st
+
+survey = st.new_survey("Coffee habits")
+survey = survey.add_question("single_choice", "Do you drink coffee?", options=["Yes", "No"], id="drinks")
+survey = survey.add_question("number", "How many cups on a typical day?", id="cups",
+                             show_if={"op": "selected", "question": "drinks", "option": "1"})
+survey = survey.add_question("grid", "How important is each?", id="importance", rows=["Price", "Taste"], scale="agreement_5")
+print(survey.move_question("importance", position=1).standard["blocks"][0]["questions"])
+try:
+    survey.move_question("drinks", after="cups")
+except st.UnsupportedEdit as error:
+    print(error)
+```
+
+```
+['importance', 'drinks', 'cups']
+This edit would leave logic or piped text reading a question asked only after it; reorder or change them first:
+  the display condition of question 'cups' reads question 'drinks', which would be asked after it
+```
+
+### `Survey.swap_questions`
+
+```python
+Survey.swap_questions(first: str, second: str) -> Survey
+```
+
+Returns a new survey where two questions trade places, in one block or across
+two.
+
+**Parameters**
+
+- `first` (`str`): one question.
+- `second` (`str`): the other.
+
+**Returns** `Survey`.
+
+**Raises** `SurveyError` (an unknown question, the same question twice, a
+dropped block) and `UnsupportedEdit` (logic would then read a later question).
+
+**Example**
+
+```python
+print(survey.swap_questions("cups", "importance").standard["blocks"][0]["questions"])
+```
+
+```
+['drinks', 'importance', 'cups']
+```
+
+### `Survey.remove_question`
+
+```python
+Survey.remove_question(question_id: str) -> Survey
+```
+
+Returns a new survey without the question. It is refused while other parts of
+the survey read the question (conditions, skip rules that jump to it, piped
+text, values set in the flow): change or remove those first. The question's own
+skip rules and conditions go with it.
+
+**Parameters**
+
+- `question_id` (`str`): the question to remove.
+
+**Returns** `Survey`.
+
+**Raises** `SurveyError` (an unknown question, a dropped block) and
+`UnsupportedEdit` (other parts read it; the message lists them).
+
+**Example**
+
+```python
+try:
+    survey.remove_question("drinks")
+except st.UnsupportedEdit as error:
+    print(error)
+print(survey.remove_question("importance").standard["blocks"][0]["questions"])
+```
+
+```
+remove_question('drinks'): other parts of the survey read this question; change or remove them first:
+  the display condition of question 'cups' reads question 'drinks'
+['drinks', 'cups']
+```
+
+### `Survey.add_block`
+
+```python
+Survey.add_block(
+    block_id: str,
+    *,
+    title: str | None = None,
+    position: int | None = None,
+    after: str | None = None,
+    before: str | None = None,
+) -> Survey
+```
+
+Returns a new survey with an empty block, and a step in the flow that shows it.
+Add questions to it with `add_question(..., block=...)` or `move_question`. (A
+block with no questions is in `standard`, but not yet in `blocks`.)
+
+**Parameters**
+
+- `block_id` (`str`): the new block's ID (text without spaces, not taken).
+- `title` (`str | None`, default `None`): its title.
+- `position` (`int | None`, default `None`): its step's place in the top level of
+  the flow, 1 for first.
+- `after` (`str | None`, default `None`): a block to show it right after, at the
+  same level of the flow (inside the same branch or group). Next to an arm of a
+  randomizer, it is a new arm.
+- `before` (`str | None`, default `None`): a block to show it right before.
+  With none of the three, the block is shown last.
+
+**Returns** `Survey`.
+
+**Raises** `SurveyError`: a block ID already taken or not valid, or `after` or
+`before` names a block the flow does not show, or shows more than once.
+
+**Example**
+
+```python
+edited = survey.add_block("feedback", title="Feedback").add_question("text", "Anything else to tell us?", block="feedback", id="more")
+print(edited.standard["flow"])
+```
+
+```
+[{'type': 'show_block', 'block': 'main'}, {'type': 'show_block', 'block': 'feedback'}]
+```
+
+### `Survey.remove_block`
+
+```python
+Survey.remove_block(block_id: str) -> Survey
+```
+
+Returns a new survey without the block, its questions, and every flow step that
+shows it. It is refused while other parts of the survey read its questions.
+Branches and groups that showed it stay, with one step fewer.
+
+**Parameters**
+
+- `block_id` (`str`): the block to remove (a conjoint or MaxDiff block too).
+
+**Returns** `Survey`.
+
+**Raises** `SurveyError` (an unknown or dropped block), `UnsupportedEdit`
+(other parts read its questions), and `SurveyFormatError` (a randomizer would
+then take more arms than it has).
+
+**Example**
+
+```python
+print(edited.remove_block("feedback").standard["flow"])
+```
+
+```
+[{'type': 'show_block', 'block': 'main'}]
+```
+
+### `Survey.group_into_block`
+
+```python
+Survey.group_into_block(
+    question_ids: list[str],
+    block_id: str,
+    *,
+    title: str | None = None,
+    after: str | None = None,
+    before: str | None = None,
+) -> Survey
+```
+
+Returns a new survey where existing questions are gathered, in the order you
+list them, into a new block. They leave the blocks they were in. The new block
+is shown right after the block of the first question listed (at the same level
+of the flow), or next to the block `after` or `before` names. A block emptied
+this way stays, with no questions; remove it with `remove_block`.
+
+**Parameters**
+
+- `question_ids` (`list[str]`): the questions to gather.
+- `block_id` (`str`): the new block's ID.
+- `title` (`str | None`, default `None`): its title.
+- `after` (`str | None`, default `None`): a block to show the new block right
+  after.
+- `before` (`str | None`, default `None`): a block to show it right before.
+
+**Returns** `Survey`.
+
+**Raises**
+
+- `SurveyError`: an unknown question, a question named twice, a block ID
+  already taken, a dropped block, or the first question's block is an arm of a
+  randomizer and neither `after` nor `before` is given (the new block would be
+  an arm of its own).
+- `UnsupportedEdit`: a question is in a block that repeats (loop and merge),
+  where it is asked once per row and in a new block would be asked once; or
+  logic would then read a later question.
+
+**Example**
+
+```python
+grouped = survey.group_into_block(["cups", "importance"], "habits", title="Habits")
+print(grouped.standard["blocks"])
+print(grouped.standard["flow"])
+```
+
+```
+[{'id': 'main', 'kind': 'survey', 'questions': ['drinks']}, {'id': 'habits', 'kind': 'survey', 'title': 'Habits', 'questions': ['cups', 'importance']}]
+[{'type': 'show_block', 'block': 'main'}, {'type': 'show_block', 'block': 'habits'}]
 ```
 
 ### `Survey.to_dict`

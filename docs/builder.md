@@ -1,9 +1,17 @@
 # Building surveys without Qualtrics: `surveytwin.builder`
 
-`surveytwin.builder` lets you write a survey in Python, or accept one from a web
-form, instead of exporting a QSF from Qualtrics. It has seven question types,
-checks every draft before building it, and can draft or refine a survey with a
-model.
+`surveytwin.builder` accepts a survey from a web form, as a draft, instead of a
+QSF exported from Qualtrics. It has seven question types and checks every draft
+before building it.
+
+To write a survey in Python, use the survey's own edit methods instead:
+`st.new_survey("Title")`, then `survey.add_question(...)`, `update_question`,
+`move_question`, `swap_questions`, `remove_question`, `add_block`, `remove_block`
+and `group_into_block`. They write [the standard format](reference/survey-format.md)
+directly, with every question type, block and setting it has (display
+conditions, skips, randomization, several blocks), and work on any survey; see
+[Editing a survey](reference/survey.md#editing-a-survey). A whole survey in the
+standard format can also be written as JSON and read with `st.read_survey`.
 
 A **draft** (a title and a list of questions) is only an input. `build_survey`
 turns it into a `Survey`, the same object `read_qsf` returns, so a built survey
@@ -11,9 +19,9 @@ goes through the same check, preview, plan, run, answer checks and exports as an
 imported one. The edit functions take a `Survey` and return a new one, and they
 work on imported surveys too.
 
-The builder makes simple surveys: one block, questions in order, no branching,
-display logic or randomization. For those, build the survey in Qualtrics and
-export the QSF.
+A draft makes simple surveys: one block, questions in order, no branching,
+display logic or randomization. For more, use the edit methods above, write the
+survey in the standard format, or build it in Qualtrics and export the QSF.
 
 ```python
 import surveytwin as st

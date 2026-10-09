@@ -36,11 +36,13 @@ from .providers.models import Model, ModelCheck, ModelRequest, Reply, env
 from .results.results import Answer, Results
 from .run import arun, run
 from .survey import BlockPreview, DropReport, Finding, Question, Survey, SurveyCheck, read_qsf, read_survey
+from .builder.standard import new_survey
 
 __all__ = [
     "__version__",
     "read_qsf",
     "read_survey",
+    "new_survey",
     "bank",
     "configure",
     "plan",

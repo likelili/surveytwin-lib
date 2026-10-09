@@ -81,16 +81,22 @@ def _read_picture(source: str, folder: Path) -> tuple[str, str]:
     return f"data:{mime};base64,{base64.b64encode(data).decode('ascii')}", ""
 
 
-def read_pictures(definition: dict[str, Any], folder: Path) -> tuple[dict[str, str], list[Finding]]:
+def read_pictures(
+    definition: dict[str, Any], folder: Path, known: dict[str, str] | None = None
+) -> tuple[dict[str, str], list[Finding]]:
     """Each picture file the definition names, read: ``{source as written: data
     address}``, and a finding for every one that cannot be used. ``folder`` is
-    where a relative path starts."""
+    where a relative path starts. A file already in ``known`` (read before) is
+    taken from it, not read again."""
     pictures: dict[str, str] = {}
     findings: list[Finding] = []
     failed: set[str] = set()
     for place, item in picture_places(definition):
         source = item["source"]
         if not is_file_source(source) or source in pictures or source in failed:
+            continue
+        if known and source in known:
+            pictures[source] = known[source]
             continue
         address, problem = _read_picture(source, folder)
         if problem:

@@ -54,7 +54,7 @@ surveytwin check product.json
 
 ```text
 warning: Q2 color: Unknown field 'color' is ignored.
-Survey('Product evaluation', 2 questions, 1 blocks)
+Survey('Product evaluation', 2 questions, 1 block)
 1 block, in flow order:
   BL_BUILDER  'Product evaluation'  2 to answer  MC 1, TE 1
 Execution mode: static

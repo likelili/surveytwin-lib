@@ -60,6 +60,16 @@ def _readme_steps(monkeypatch) -> set[str]:
         print(survey, survey.kind)
         survey = st.read_survey("examples/survey-format/coffee-conjoint.json")
         print(survey, survey.questions["coffee_t1"].type)
+        # building a survey in Python
+        survey = st.new_survey("Coffee habits")
+        survey = survey.add_question("single_choice", "Do you drink coffee?", options=["Yes", "No"], id="drinks", required=True)
+        survey = survey.add_question("number", "How many cups on a typical day?", id="cups", min=0, max=12,
+                                     show_if={"op": "selected", "question": "drinks", "option": "1"})
+        survey = survey.add_question("grid", "How important is each when you buy coffee?", id="importance",
+                                     rows=["Price", "Taste"], scale="agreement_5")
+        survey = survey.group_into_block(["cups", "importance"], "habits", title="Habits")
+        print(survey)
+        print(survey.standard["flow"])
     return set(out.getvalue().splitlines())
 
 

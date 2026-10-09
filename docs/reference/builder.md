@@ -1,10 +1,19 @@
-# The survey builder (`surveytwin.builder`)
+# The draft builder (`surveytwin.builder`)
 
 `surveytwin.builder` makes a `Survey` from a draft (a title and a list of
-questions) and edits surveys question by question; a built survey takes the
-place of `read_qsf` at the start of a run and goes through the same check, plan,
-run and exports. This page lists every name in the module. For a walk-through,
-see [Building surveys without Qualtrics](../builder.md).
+questions, the JSON a web form sends) and edits surveys question by question; a
+built survey takes the place of `read_qsf` at the start of a run and goes
+through the same check, plan, run and exports. This page lists every name in
+the module. For a walk-through, see [Building surveys without
+Qualtrics](../builder.md).
+
+To write or change a survey in Python, use the survey's own edit methods
+instead: `st.new_survey`, `Survey.add_question`, `update_question`,
+`move_question`, `swap_questions`, `remove_question`, `add_block`,
+`remove_block` and `group_into_block` ([Editing a survey](survey.md#editing-a-survey)).
+They take every question type and setting of the standard format and change the
+survey's definition directly. A draft holds one block of seven simple question
+types; it is kept for web forms.
 
 ```python
 from surveytwin import builder
@@ -144,6 +153,11 @@ surveytwin.builder.build_survey(
 Turns a draft into a `Survey` with one block that holds the questions in order.
 It makes no model call and writes no file.
 
+A dict with `schema_version` is a whole survey in [the standard
+format](survey-format.md), not a draft: it is read as `read_survey` reads it
+(a relative picture path from the current folder), and `block_id`,
+`block_name`, `image_resolver` and `policy` do not apply to it.
+
 [`DraftQuestion`](#draftquestion) shows how each question type becomes a survey
 question. Blank question IDs get the lowest free `Q<n>`, as
 [`assign_ids`](#assign_ids) fills them. A question with a `qid` keeps that
@@ -153,8 +167,8 @@ lists them. Warnings do not stop the build; see them with
 
 **Parameters**
 
-- `draft` (`SurveyDraft | dict[str, Any]`): the draft, or its JSON payload. It is
-  never changed.
+- `draft` (`SurveyDraft | dict[str, Any]`): the draft, or its JSON payload; or a
+  whole survey in the standard format. It is never changed.
 - `block_id` (`str | None`, default `None`): the block's ID. `None` takes the
   draft's own `block_id` (a draft from `to_draft` has one), else `BL_BUILDER`
   ([`DEFAULT_BLOCK_ID`](#default_block_id)). Surrounding spaces are removed.
@@ -177,7 +191,10 @@ back the survey's metadata.
 - `DraftError`: the draft has an error, including a payload of the wrong shape
   (`draft.invalid`, `question.invalid`), or two CSV columns would get the same
   name.
-- `SurveyError`: `block_id` is blank.
+- `SurveyError`: `block_id` is blank, or a draft option was given with a survey
+  in the standard format.
+- `SurveyFormatError`: a survey in the standard format has errors (as
+  `read_survey`).
 
 **Example**
 
@@ -229,8 +246,9 @@ are left out.
 **Raises**
 
 - `UnsupportedEdit`: a draft cannot hold this survey without losing something.
-  A draft is one plain block of questions, so this covers: questions read from a
-  QSF; more than one block, or a block shown more than once; any other flow
+  A draft is one plain block of questions, so this covers: questions not made
+  from a draft (read from a QSF or a survey file, or added with
+  `Survey.add_question`); more than one block, or a block shown more than once; any other flow
   element (branches, randomizers, embedded data); a block that loops (Loop &
   Merge) or shows its questions in random order; survey parts besides the flow;
   a question changed outside the builder (it no longer matches its draft); and a
@@ -906,7 +924,7 @@ draft = builder.SurveyDraft.from_dict({"title": "Snacks", "questions": [
 ]})
 draft.questions.append(builder.DraftQuestion(type="open_text", text="Why?"))
 print(draft.to_dict()["questions"][1]["type"])   # open_text
-print(builder.build_survey(draft))                # Survey('Snacks', 2 questions, 1 blocks)
+print(builder.build_survey(draft))                # Survey('Snacks', 2 questions, 1 block)
 ```
 
 ## `DraftQuestion`

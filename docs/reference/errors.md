@@ -117,7 +117,10 @@ A problem with the survey, or with how a function is asked to use it. Raised by:
 **Parent:** `SurveyError`.
 
 A survey in [the standard format](survey-format.md) has errors; raised by
-`read_survey`. `findings` lists every problem, warnings included, each with
+`read_survey`, and by the [edit methods](survey.md#editing-a-survey) (`Survey.add_question`
+and the others) when an edit would leave an error in the definition, name a
+picture file that cannot be read, or give two CSV columns the same name (code
+`export.column_clash`); only the errors the edit makes are listed. `findings` lists every problem, warnings included, each with
 `path` (the field: `$.questions[2].response.options[1].label`), `message`, `code`
 (listed in [How a survey is checked](survey-format.md#how-a-survey-is-checked))
 and `level` (`"error"` or `"warning"`). The message shows the first five errors.
@@ -212,6 +215,15 @@ error text.empty Q2 text
 
 A builder edit that would lose survey content or break the survey's logic.
 Nothing was changed. Raised by:
+
+- The [edit methods](survey.md#editing-a-survey) of `Survey`: an edit that would
+  leave a condition, a skip rule, piped text, a value set in the flow or a
+  repeat's rows reading a question that is gone (`remove_question`,
+  `remove_block`) or asked only after it (`add_question`, `move_question`,
+  `swap_questions`, `group_into_block`); `update_question` giving a question
+  that other parts read a new kind of answer, or a new type to a question with
+  skip rules when `skip` is not given; `group_into_block` taking a question out
+  of a block that repeats. The message lists each place.
 
 - `builder.to_draft`, and `builder.apply_draft`, which starts from it: the
   survey has no draft form without losing something, such as questions read
