@@ -203,7 +203,9 @@ class Compiler:
             self._flow_id(node, element)
             raw = source.get("SelectElements")
             element["SelectElements"] = raw if raw is not None and (positive_int(raw) or 1) == node["take"] else node["take"]
-            if "evenly" in node:
+            if "evenly" not in node:
+                element["EvenPresentation"] = True  # the format's default: the arms are balanced
+            elif not (node["evenly"] is False and source.get("even_presentation_unset")):
                 raw_even = source.get("EvenPresentation")
                 element["EvenPresentation"] = raw_even if "EvenPresentation" in source and (raw_even is True) == node["evenly"] else node["evenly"]
             self._children(node, element, "children")

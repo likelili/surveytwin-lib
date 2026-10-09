@@ -93,7 +93,7 @@ def even_schedules(flow: list[dict[str, Any]], *, participants: int, seed: int) 
                 if children:
                     take = _take(node, len(children))
                     arms = take >= len(children) and is_assignment_arms(children)
-                    if node.get("evenly") is True and (take < len(children) or arms):
+                    if node.get("evenly", True) is True and (take < len(children) or arms):
                         plan[flow_id(node)] = _even_schedule(
                             flow=flow_id(node), child_count=len(children), count=1 if arms else take, participants=max(0, participants), seed=seed
                         )

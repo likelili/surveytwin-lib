@@ -890,7 +890,10 @@ FlowNode = Tagged(
                 "id": F(ID, True),
                 "type": F(Const("randomize"), True),
                 "take": F(PositiveInt, True),
-                "evenly": F(Bool(), doc="Balance the arms across participants."),
+                "evenly": F(
+                    Bool(),
+                    doc="Balance the arms across participants (true, the default), or draw each participant's arms independently (false).",
+                ),
                 "children": F(ListOf(_FLOW), True),
                 "source": F(AnyValue()),
             },

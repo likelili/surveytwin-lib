@@ -390,7 +390,7 @@ The flow is a list of steps, run in order. Every step except `show_block` has an
 | `show_block` | `block` | Shows a block. A block shown twice is asked twice. |
 | `set_variables` | `assignments` | Sets [variables](#variables): each `{"variable": name, "value": text}` (the text may pipe values), or `{"variable": name, "from_outside": true}` for a value supplied with the run. |
 | `branch` | `when`, `then`, `else` | Runs `then` when the condition holds, and `else` (optional) when it does not. |
-| `randomize` | `take`, `children`, `evenly` | Runs `take` of its steps, drawn at random for each twin; with `evenly`, each step is drawn about equally often across twins. |
+| `randomize` | `take`, `children`, `evenly` | Runs `take` of its steps, drawn at random for each twin. `evenly` is `true` when absent: each step is drawn about equally often across twins. With `"evenly": false`, each twin's steps are drawn on their own, so the counts vary. A survey read from a QSF keeps the randomizer's own setting (Qualtrics' "Evenly Present Elements"). |
 | `group` | `children`, `title` | Runs its steps in order. |
 | `end` | | Ends the survey. |
 

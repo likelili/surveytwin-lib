@@ -601,7 +601,7 @@ class StagedRuntime:
             if kind == "randomize":
                 children = node.get("children") or []
                 selected = self._randomizer_indexes(node, state, len(children))
-                events.append({"type": "randomizer", "flow_id": flow_id(node), "even_presentation": node.get("evenly") is True, "selected_indexes": selected})
+                events.append({"type": "randomizer", "flow_id": flow_id(node), "even_presentation": node.get("evenly", True) is True, "selected_indexes": selected})
                 for index in selected:
                     if 0 <= index < len(children):
                         result = self._walk([children[index]], state, variables, blocks, events)
@@ -657,13 +657,13 @@ class StagedRuntime:
         count = max(1, min(int(node.get("take") or 1), child_count))
         children = node.get("children") or []
         if count == child_count and is_assignment_arms(children):
-            if node.get("evenly") is True:
+            if node.get("evenly", True) is True:
                 assigned = self._even_indexes(flow=flow, child_count=child_count, count=1, persona_index=state.persona_index)[0]
             else:
                 assigned = self._independent_indexes(flow=flow, persona_id=state.persona_id, child_count=child_count, count=1)[0]
             ordered = self._independent_indexes(flow=f"{flow}:presentation-order", persona_id=state.persona_id, child_count=child_count, count=child_count)
             indexes = [index for index in ordered if index != assigned] + [assigned]
-        elif node.get("evenly") is True:
+        elif node.get("evenly", True) is True:
             indexes = self._even_indexes(flow=flow, child_count=child_count, count=count, persona_index=state.persona_index)
         else:
             indexes = self._independent_indexes(flow=flow, persona_id=state.persona_id, child_count=child_count, count=count)

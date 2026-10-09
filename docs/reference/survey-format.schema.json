@@ -3180,7 +3180,7 @@
         },
         "evenly": {
           "type": "boolean",
-          "description": "Balance the arms across participants."
+          "description": "Balance the arms across participants (true, the default), or draw each participant's arms independently (false)."
         },
         "children": {
           "type": "array",

@@ -165,6 +165,11 @@ class TemplateReader:
                 node["evenly"] = bool(element["EvenPresentation"]) if isinstance(element["EvenPresentation"], bool) else element["EvenPresentation"] is True
                 if not isinstance(element["EvenPresentation"], bool):
                     source["EvenPresentation"] = element["EvenPresentation"]
+            else:
+                # The source sets no even presentation: each participant is drawn
+                # independently. Written out, since the format's default is even.
+                node["evenly"] = False
+                source["even_presentation_unset"] = True
             children_key = "children"
         elif kind == "Group":
             node = {"id": self._node_id(element, "group"), "type": "group", "title": str(element.get("Description", "") or "")}
