@@ -640,6 +640,11 @@ class Results:
                 f"{outcome['same_item']} best/worst pair(s) named the same item twice when asked again; "
                 "those repairs were not stored and the answers stay flagged."
             )
+        if outcome.get("broken_rankings"):
+            warnings.append(
+                f"{outcome['broken_rankings']} ranking(s) were still not a valid ranking when asked again (a rank "
+                "given twice or skipped); those repairs were not stored and the answers stay flagged."
+            )
         from ..answers.repair_marks import shaped_by_repaired
 
         marked = len(shaped_by_repaired(rows, self._definition()))

@@ -1115,16 +1115,6 @@ Errors unless marked. "Policy" marks a rule that applies only with a
 | `text.piping_by_position` | Warning: a draft with `next_qid` but no `qid` pipes an answer, so its questions are numbered anew and a pipe may read another question. Send each `qid` back, or use `apply_draft`. |
 | `add.empty`, `update.empty`, `remove.empty` | An edit given nothing to add, change or remove. |
 | `apply.piped_changed` | Warning: `apply_draft` matched a question by its tag only, its text changed, and other questions pipe its answer. |
-| `generate.count` | Warning: the model returned a different number of usable questions than asked for. |
-| `generate.dropped` | Warning: an item from the model was left out, with the reason. |
-| `generate.image_removed` | Warning: the model named an image; a generated draft has none. |
-| `generate.title` | Info: the model gave no title. |
-| `model.field_cleared` | Warning: a value from the model could not be used and was cleared. |
-| `refine.kept_original` | Warning: the model's version of a question could not be used; the original was kept. |
-| `refine.dropped` | Warning: a new item from the model was left out, with the reason. |
-| `refine.invented_image` | Warning: the model gave a question an image the draft does not have; it was removed. |
-| `refine.renumbered` | Warning: a new question's ID from the model was taken or reserved; it got a new one. |
-| `refine.piped_changed` | Warning: a question whose answer other questions pipe changed its type or text. |
 
 ## `BuilderPolicy`
 

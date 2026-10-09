@@ -310,7 +310,7 @@ question, the answer is left blank in the data and flagged with a status
 | Status | Meaning |
 |---|---|
 | `skipped` | The twin was asked the question but gave nothing usable: the reply left it out, left a required text box empty, or every attempt of the call failed. |
-| `out_of_range` | The twin answered, but the answer matches none of the options; or a number question got text with no number in it, or a number the question does not allow (outside its range, off its step, or with more decimal places than it allows). The words it gave are kept in `Answer.raw`; `value` and `label` stay blank. Nothing is moved to a nearby allowed answer: repairs happen after the run (`rerun_flagged`). |
+| `out_of_range` | The twin answered, but the answer matches none of the options; or a number question got text with no number in it, or a number the question does not allow (outside its range, off its step, or with more decimal places than it allows); or a ranking gave one rank to two items, skipped a rank, or ranked more items than allowed (then every item of the ranking is flagged). The words it gave are kept in `Answer.raw`; `value` and `label` stay blank. Nothing is moved to a nearby allowed answer, and a ranking is never renumbered: repairs happen after the run (`rerun_flagged`). |
 
 Older data may hold `needs_validation`; `Answer.status` reports it as `skipped`.
 

@@ -13,8 +13,10 @@ from __future__ import annotations
 # text keeps its lines and each survey picture is sent where the
 # survey shows it. "3": a conjoint task shows its alternatives as a
 # table, and a MaxDiff pair is not asked again during a run while a
-# rerun asks it with its rule.
-PROMPT_VERSION = "3"
+# rerun asks it with its rule. "4": a rerun asks a ranking again with its rule
+# (a unique rank from 1 to N), and the rerun instruction says no rank may be
+# given twice or skipped.
+PROMPT_VERSION = "4"
 
 
 def __getattr__(name: str):

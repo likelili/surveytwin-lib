@@ -222,6 +222,44 @@ def best_worst_roles(blocks: Blocks) -> dict[str, tuple[str, str]]:
     return out
 
 
+def ranking_items(blocks: Blocks) -> dict[str, dict[str, Any]]:
+    """Each ranking item's answer ID (``<question>_<item>``) with its ranking: the
+    question, the item, the number of items and the limits on how many to rank."""
+    from ..engine import render
+
+    out: dict[str, dict[str, Any]] = {}
+    for questions in blocks:
+        for shown in questions:
+            view = render.Shown(shown)
+            if view.kind != "ranking":
+                continue
+            low, high = view.limits()
+            items = view.rank_items
+            for item in items:
+                out[f"{view.id}_{item.id}"] = {"group": view.id, "item": item.id, "label": item.label, "count": len(items), "min": low, "max": high}
+    return out
+
+
+def broken_rankings(values: dict[str, str], rankings: dict[str, dict[str, Any]], touched: set[str]) -> list[str]:
+    """The rankings (question IDs) among those with a ``touched`` item whose ranks
+    (``values``, by answer ID) are not a ranking the question allows."""
+    groups: dict[str, list[str]] = {}
+    for answer_id, info in rankings.items():
+        groups.setdefault(info["group"], []).append(answer_id)
+    broken = []
+    for group, answer_ids in groups.items():
+        if not touched & set(answer_ids):
+            continue
+        ranks = []
+        for answer_id in answer_ids:
+            match = re.fullmatch(r"\s*(\d+)(?:\.0+)?\s*", str(values.get(answer_id, "") or ""))
+            ranks.append(int(match.group(1)) if match else None)
+        info = rankings[answer_ids[0]]
+        if se.ranking_problem(ranks, min_items=info["min"], max_items=info["max"]):
+            broken.append(group)
+    return broken
+
+
 def same_item_pairs(labels: dict[str, str], roles: dict[str, tuple[str, str]]) -> list[tuple[str, str]]:
     """The (best, worst) question IDs whose answers (``labels``, by question ID)
     name the same item."""
@@ -371,10 +409,19 @@ async def rerun_twin(
     blocks = survey_blocks(definition)
     pictures, owners = rerun_pictures(blocks, questions)
     roles = best_worst_roles(blocks)
+    rankings = ranking_items(blocks)
     for question in questions:
         if question["id"] in roles:
             # a MaxDiff best or worst question: asked with the rule that the two differ
             question["best_worst_group_id"], question["best_worst_role"] = roles[question["id"]]
+        if question["id"] in rankings:
+            # a ranking item: asked with its rule (a unique rank from 1 to N)
+            info = rankings[question["id"]]
+            question.update({"parent_question_id": info["group"], "rank_order_item_id": info["item"], "rank_order_count": info["count"]})
+            if info["min"] is not None:
+                question["rank_order_min_items"] = info["min"]
+            if info["max"] is not None:
+                question["rank_order_max_items"] = info["max"]
     unavailable = {str(url).strip() for url in (blocked_image_urls or []) if str(url).strip()}
     if not images:
         unavailable |= se._sequence_media_urls(pictures)
@@ -423,6 +470,13 @@ async def rerun_twin(
     for pair in same_item:
         for qid in pair:
             found.pop(qid, None)
+    # A ranking must still be one the question allows, with the ranks the twin
+    # already gave: otherwise none of its repairs is stored, and it stays flagged.
+    broken = broken_rankings({**prior, **found}, rankings, set(found))
+    for group in broken:
+        for answer_id, info in rankings.items():
+            if info["group"] == group:
+                found.pop(answer_id, None)
     for qid, label in found.items():
         for row in rows:
             if str(row.get("persona_id", "")) == persona_id and str(row.get("question_id", "")) == qid:
@@ -435,6 +489,8 @@ async def rerun_twin(
         result["not_asked"] = len(not_asked)
     if same_item:
         result["same_item"] = len(same_item)
+    if broken:
+        result["broken_rankings"] = len(broken)
     return result
 
 
@@ -473,6 +529,7 @@ async def rerun_all(
         "repaired": sum(o.get("repaired", 0) for o in outcomes),
         "not_asked": sum(o.get("not_asked", 0) for o in outcomes),
         "same_item": sum(o.get("same_item", 0) for o in outcomes),
+        "broken_rankings": sum(o.get("broken_rankings", 0) for o in outcomes),
         "errors": [o for o in outcomes if o.get("error")],
         "missing_persona_text": missing,
     }

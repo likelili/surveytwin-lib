@@ -1772,7 +1772,8 @@ RERUN_INSTRUCTION = (
     "- numeric / slider / scale / star (no options): a number written in digits, within the allowed range;\n"
     "- multi-select option groups: select the number of options its selection_rule requires, each verbatim;\n"
     "- constant-sum rows: allocations across the group that add up to the stated total;\n"
-    "- rank-order items: a unique whole-number rank for each item;\n"
+    "- rank-order items: a whole-number rank for each item, 1 the highest, with no rank given to two "
+    "items and no rank skipped (the ranks already given count);\n"
     "- open_text: a genuine free-text answer that follows any stated text/length/format rule — never blank.\n"
     'Return JSON whose "answers" array contains ONLY the [NEEDS ANSWER] questions.'
 )
@@ -2452,10 +2453,40 @@ def _flag_best_worst_conflicts(
     return output
 
 
+def ranking_problem(ranks: list[int | None], *, min_items: int | None = None, max_items: int | None = None) -> str:
+    """Why the ranks given to a ranking's items are not a ranking the question
+    allows ("" when they are). ``ranks``: each item's whole-number rank, None for
+    an item left unranked. Ranked items must hold 1, 2, ... with no rank given
+    twice and none skipped, and no more items than ``max_items``."""
+    given = [rank for rank in ranks if rank is not None]
+    if len(set(given)) != len(given):
+        return "a rank given to more than one item"
+    if sorted(given) != list(range(1, len(given) + 1)):
+        return "ranks that skip a number"
+    if max_items and len(given) > max_items:
+        return "more items ranked than the question allows"
+    return ""
+
+
+def _whole_rank(answer: dict[str, Any]) -> int | None:
+    """An item's rank as a whole number (None when it has none)."""
+    match = re.fullmatch(r"\s*(\d+)(?:\.0+)?\s*", str(answer.get("answer_value", "") or ""))
+    return int(match.group(1)) if match else None
+
+
 def _normalize_rank_order_groups(
     answers: list[dict[str, Any]],
     questions: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    """Check each ranking as a whole; never renumber it.
+
+    Each item was read as a whole number from 1 to the number of items (a rank
+    outside that is already flagged). A ranking whose ranks are given twice, skip
+    a number, or rank more items than allowed is flagged as a whole: every item
+    ``out_of_range``, the model's own rank kept in ``answer_raw``, for a rerun to
+    repair after the run. A valid ranking keeps its ranks as given. An item left
+    unranked is ``skipped`` unless the question lets the twin rank fewer items
+    (``rank_order_min_items``) and enough are ranked."""
     output = [dict(answer) for answer in answers]
     groups: dict[str, list[int]] = {}
 
@@ -2470,40 +2501,43 @@ def _normalize_rank_order_groups(
     for indices in groups.values():
         if len(indices) < 2:
             continue
-        # Only items the twin actually ranked (value > 0) participate. A
-        # default_rank the twin never touched and a display-order fill both
-        # fabricate a complete ranking out of a skip — removed.
-        ranked: list[tuple[float, int, int]] = []
-        skipped: list[int] = []
-        for sequence_idx, idx in enumerate(indices):
-            value = _parse_numeric_answer_value(output[idx])
-            if value > 0:
-                ranked.append((value, sequence_idx, idx))
-            else:
-                skipped.append(idx)
+        first = questions[indices[0]]
+        min_items = _positive_int_metadata(first, "rank_order_min_items") or None
+        max_items = _positive_int_metadata(first, "rank_order_max_items") or None
+        invalid = [idx for idx in indices if output[idx].get("answer_status") == ANSWER_STATUS_OUT_OF_RANGE]
+        ranks = {idx: (None if output[idx].get("answer_status") else _whole_rank(output[idx])) for idx in indices}
+        unranked = [idx for idx in indices if ranks[idx] is None and idx not in invalid]
 
-        if not ranked:
+        if not invalid and len(unranked) == len(indices):
             # Full skip: leave every item blank and flagged; no ranking exists.
-            for idx in skipped:
+            for idx in indices:
                 output[idx]["answer_value"] = ""
                 output[idx]["answer_label"] = ""
                 output[idx]["answer_raw"] = ""
                 output[idx]["answer_status"] = ANSWER_STATUS_SKIPPED
             continue
 
-        # Partial: dense-rank the genuinely ranked items (real intent honored);
-        # unranked items stay blank + flagged so the group is visibly incomplete.
-        ranked.sort(key=lambda item: (item[0], item[1]))
-        for rank, (_value, _sequence_idx, idx) in enumerate(ranked, start=1):
-            formatted = str(rank)
-            output[idx]["answer_value"] = formatted
-            output[idx]["answer_label"] = formatted
-            output[idx]["answer_raw"] = formatted
-        for idx in skipped:
+        if invalid or ranking_problem([ranks[idx] for idx in indices], min_items=min_items, max_items=max_items):
+            # Not a ranking the question allows: every item is flagged, each with
+            # the rank the model gave it, and none is moved to another rank.
+            for idx in indices:
+                given = str(output[idx].get("answer_raw") or output[idx].get("answer_value") or "").strip()
+                output[idx]["answer_value"] = ""
+                output[idx]["answer_label"] = ""
+                output[idx]["answer_raw"] = given
+                output[idx]["answer_status"] = ANSWER_STATUS_OUT_OF_RANGE
+            continue
+
+        ranked_count = len(indices) - len(unranked)
+        partial_allowed = min_items is not None and ranked_count >= min_items
+        for idx in unranked:
             output[idx]["answer_value"] = ""
             output[idx]["answer_label"] = ""
             output[idx]["answer_raw"] = ""
-            output[idx]["answer_status"] = ANSWER_STATUS_SKIPPED
+            if partial_allowed:
+                output[idx].pop("answer_status", None)
+            else:
+                output[idx]["answer_status"] = ANSWER_STATUS_SKIPPED
 
     return output
 

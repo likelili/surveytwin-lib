@@ -47,10 +47,11 @@ are loaded when first read, so `dir(st.prompts)` does not list them.
 surveytwin.prompts.PROMPT_VERSION: str
 ```
 
-The version of the prompt texts, now `"3"` (a conjoint task shows its
-alternatives as a table, and a MaxDiff pair that names one item twice is asked
-again only by a rerun; `"2"`: question text keeps its lines, and each image is
-sent where the survey shows it). It is raised whenever any prompt
+The version of the prompt texts, now `"4"` (a rerun asks a ranking again with its
+rule, and says that no rank may be given twice or skipped; `"3"`: a conjoint task
+shows its alternatives as a table, and a MaxDiff pair that names one item twice
+is asked again only by a rerun; `"2"`: question text keeps its lines, and each
+image is sent where the survey shows it). It is raised whenever any prompt
 text changes, so two runs with the same version were asked in the same words.
 Every run records it in `results.provenance["prompt_version"]`, and a plan has it
 as `plan.prompt_version`.
@@ -64,7 +65,7 @@ print(st.prompts.PROMPT_VERSION)
 ```
 
 ```
-3
+4
 ```
 
 ## `DEFAULT_SYSTEM_INSTRUCTION`
@@ -183,7 +184,7 @@ RE-ANSWER TASK: You already completed this survey; your previous answers are lis
 - numeric / slider / scale / star (no options): a number written in digits, within the allowed range;
 - multi-select option groups: select the number of options its selection_rule requires, each verbatim;
 - constant-sum rows: allocations across the group that add up to the stated total;
-- rank-order items: a unique whole-number rank for each item;
+- rank-order items: a whole-number rank for each item, 1 the highest, with no rank given to two items and no rank skipped (the ranks already given count);
 - open_text: a genuine free-text answer that follows any stated text/length/format rule — never blank.
 Return JSON whose "answers" array contains ONLY the [NEEDS ANSWER] questions.
 ```
