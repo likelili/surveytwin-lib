@@ -1,8 +1,10 @@
 # surveytwin
 
-A Python toolkit for building surveys and experiments and running digital-twin simulations.
+A Python toolkit for defining surveys and experiments, preparing their materials for language models, and running digital-twin simulations.
 
-Create a survey in Python, load a standard survey definition, or import a Qualtrics QSF. Choose a persona bank and language model, preview the prompts, run the simulation, and export the responses.
+Specify what each twin sees and answers: instructions, text, images, tables, response options and survey logic. `surveytwin` prepares the prompts, runs the survey with your chosen persona bank and model, and records answers in structured outputs.
+
+Build a survey in Python, load a standard definition, or import a Qualtrics QSF. Preview the prompts before running, then inspect and export the results.
 
 ![Define a survey, configure the personas and model, prepare a plan, run the simulation, and inspect results.](assets/surveytwin-workflow.svg)
 
@@ -22,15 +24,19 @@ Create a survey in Python, load a standard survey definition, or import a Qualtr
 
 ## Install
 
-Use Python 3.11 or later. Until PyPI publication, install from a checkout of this repository, in its root folder:
+Use Python 3.11 or later.
 
 ```bash
-python3 -m pip install -e .
+pip install surveytwin
 ```
 
-For pandas support, install with `python3 -m pip install -e '.[pandas]'`.
+For pandas and Parquet support:
 
-Run the examples from the repository root. The included example bank contains eight invented personas.
+```bash
+pip install "surveytwin[pandas,parquet]"
+```
+
+The examples below use sample files from this repository. Download it and run the examples from its root folder.
 
 ## Quick start
 
