@@ -177,7 +177,7 @@ def test_a_picture_with_no_place_in_the_text_comes_before_it_and_item_pictures_a
 def test_a_survey_without_pictures_reads_as_before():
     survey = st.read_qsf(qsf({"BL_1": ("A", ["QID1"])}, {"QID1": _payload("QID1", "TE", "SL", "<p>Plain</p><p>text</p>")}, [block("BL_1")]))
     text, media, _questions = _rendered(survey)
-    assert media == [] and "[[" not in text and "Plain\n\ntext" in text
+    assert media == [] and "[[image" not in text and "Plain\n\ntext" in text
 
 
 # ---- the request --------------------------------------------------------------------------

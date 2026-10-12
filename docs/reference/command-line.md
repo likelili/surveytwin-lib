@@ -327,9 +327,11 @@ surveytwin prompts examples/example_survey.qsf --bank examples/example-bank --tw
 ```
 
 ```text
-##### twin ex-07 (multimodal, ~10,707 input tokens) #####
+##### twin ex-07 (multimodal, ~9,412 input tokens) #####
 === SYSTEM ===
-You are a survey simulation respondent. Stay faithful to the persona context. Return valid JSON only.
+You are an AI assistant. Your task is to answer the survey questions in the 'Survey sequence' as if you are the person described in the 'Persona profile' (which consists of their past responses to questions and other things they have expressed).
+Adhere to the persona by being consistent with their previous answers and stated characteristics.
+Follow all instructions provided for the new questions carefully regarding the format of your answer. Return valid JSON only.
 CRITICAL — match the answer format to each question's fields:
 ...
 === USER ===
@@ -344,7 +346,7 @@ What is your favorite pet?
 Question Type: Single Choice
 ...
 
-##### twin ex-08 (multimodal, ~10,711 input tokens) #####
+##### twin ex-08 (multimodal, ~9,417 input tokens) #####
 ...
 ```
 

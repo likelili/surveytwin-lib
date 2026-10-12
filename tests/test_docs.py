@@ -93,7 +93,7 @@ def test_every_public_name_has_an_entry():
                 missing.append(name)
         elif f"`{name}`" not in ALL_TEXT:
             missing.append(name)
-    for name in ("PROMPT_VERSION", "DEFAULT_SYSTEM_INSTRUCTION", "SIMULATION_FORMAT_CONTRACT", "RERUN_INSTRUCTION", "CT_SYSTEM_INSTRUCTION"):
+    for name in ("PROMPT_VERSION", "DEFAULT_SYSTEM_INSTRUCTION", "SIMULATION_FORMAT_CONTRACT", "RERUN_INSTRUCTION", "CT_SYSTEM_INSTRUCTION", "asked_questions"):
         if f"`{name}`" not in ALL_TEXT:
             missing.append(f"prompts.{name}")
     assert not missing, "not documented in docs/reference/: " + ", ".join(missing)

@@ -19,7 +19,7 @@ import pytest
 
 import surveytwin as st
 from conftest import TESTS
-from fakes import answer_questions, scripted_model
+from fakes import answer_questions, asked_questions, scripted_model
 
 from surveytwin.experiments.design import (
     ConjointRules,
@@ -298,8 +298,7 @@ def test_the_answer_names_the_alternative_shown_whatever_its_position(tmp_path):
     def pick_second(user, answers):
         for a in answers:
             if a["question_id"].startswith("coffee_t"):
-                start = user.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-                options = next(q["options"] for q in json.loads(user[start:user.index("\n\nRespond", start)]) if q["id"] == a["question_id"])
+                options = next(q["options"] for q in asked_questions(user) if q["id"] == a["question_id"])
                 a["answer_value"] = a["answer_label"] = a["answer_raw"] = options[1]
         return answers
 
@@ -428,9 +427,8 @@ def test_static_and_staged_runs_draw_the_same_tasks():
 
 
 def _options(user: str, question_id: str) -> list[str]:
-    """The options a request lists for a question (its Questions JSON)."""
-    start = user.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-    return next(q["options"] for q in json.loads(user[start:user.index("\n\nRespond", start)]) if q["id"] == question_id)
+    """The options a request lists for a question."""
+    return next(q["options"] for q in asked_questions(user) if q["id"] == question_id)
 
 
 def _worst_is(pick):

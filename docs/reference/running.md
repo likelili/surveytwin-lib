@@ -20,8 +20,7 @@ import surveytwin as st
 
 def questions_in(request: st.ModelRequest) -> list[dict]:
     """The questions one call asks, read from the prompt (for stand-in models only)."""
-    listed = request.user.split("Questions JSON:\n")[-1].split("\n\nRespond using JSON schema")[0]
-    return json.loads(listed)
+    return st.prompts.asked_questions(request.user)
 
 def first_option(request: st.ModelRequest) -> st.Reply:
     """A stand-in for a real model: each question gets its first option, or 5;
@@ -492,7 +491,7 @@ print(results.usage_totals)
 [('ex-04', 1), ('ex-04', 2), ('ex-05', 1), ('ex-05', 2), ('ex-08', 1), ('ex-08', 2)]
 function function first-option completed 40 {'usage_known': True, 'stop_reason': None, 'kind': 'function'}
 True
-{'calls': 6, 'input_tokens': 40093, 'output_tokens': 240, 'reasoning_tokens': 0, 'total_tokens': 40333}
+{'calls': 6, 'input_tokens': 36069, 'output_tokens': 240, 'reasoning_tokens': 0, 'total_tokens': 36309}
 ```
 
 ## Progress

@@ -20,11 +20,20 @@ Each call that asks a twin to answer has two messages.
     untrusted data, after a line naming the bank, the representation and the
     persona;
   - `Survey sequence:` and the survey as the twin sees it, question by question.
+    Under each question, `Answer as:` and one line for each answer it takes:
+    the ID to answer under and the fields the answer rules refer to (`options`,
+    `numeric_min`, `selection_rule` and so on), with the question's rules also
+    in words (`rules`) and, for a row, item or field, which one it is (`row`).
     In a later stage of a staged survey, the twin's earlier answers come first,
     under `Earlier answers in this same survey:`;
-  - `Questions JSON:` and the questions to answer, with the fields the answer
-    rules refer to (`options`, `numeric_min`, `selection_rule` and so on);
+  - `Answer each question under its "Answer as" line.` and the IDs to answer, in
+    order;
   - `Respond using JSON schema:` and the shape the reply must have.
+
+  Before prompt version 5, the questions were listed again after the survey,
+  under `Questions JSON:`, each with its text. A survey text saved by an older
+  version (asked again by `Results.rerun_flagged`) is still asked that way.
+  [`asked_questions`](#asked_questions) reads the questions from either.
 
 When the survey shows images and the model takes image input, the same texts are
 sent with each image where the survey shows it (a request of the `"multimodal"`
@@ -39,7 +48,8 @@ images shows the labels; when the images could not be sent, the label ends in
 
 The texts can be read as `st.prompts.<NAME>` after `import surveytwin as st`, or
 imported with `from surveytwin.prompts import <NAME>`. All but `PROMPT_VERSION`
-are loaded when first read, so `dir(st.prompts)` does not list them.
+(and the function `asked_questions`) are loaded when first read, so
+`dir(st.prompts)` does not list them.
 
 ## `PROMPT_VERSION`
 
@@ -47,7 +57,9 @@ are loaded when first read, so `dir(st.prompts)` does not list them.
 surveytwin.prompts.PROMPT_VERSION: str
 ```
 
-The version of the prompt texts, now `"4"` (a rerun asks a ranking again with its
+The version of the prompt texts, now `"5"` (the instruction is the Funhouse
+Mirror study's, and each question's answer details come under it in the survey
+instead of in a list after it; `"4"`: a rerun asks a ranking again with its
 rule, and says that no rank may be given twice or skipped; `"3"`: a conjoint task
 shows its alternatives as a table, and a MaxDiff pair that names one item twice
 is asked again only by a rerun; `"2"`: question text keeps its lines, and each
@@ -65,7 +77,7 @@ print(st.prompts.PROMPT_VERSION)
 ```
 
 ```
-4
+5
 ```
 
 ## `DEFAULT_SYSTEM_INSTRUCTION`
@@ -87,7 +99,9 @@ print(st.prompts.DEFAULT_SYSTEM_INSTRUCTION)
 ```
 
 ```
-You are a survey simulation respondent. Stay faithful to the persona context.
+You are an AI assistant. Your task is to answer the survey questions in the 'Survey sequence' as if you are the person described in the 'Persona profile' (which consists of their past responses to questions and other things they have expressed).
+Adhere to the persona by being consistent with their previous answers and stated characteristics.
+Follow all instructions provided for the new questions carefully regarding the format of your answer.
 ```
 
 ## `SIMULATION_FORMAT_CONTRACT`
@@ -187,6 +201,37 @@ RE-ANSWER TASK: You already completed this survey; your previous answers are lis
 - rank-order items: a whole-number rank for each item, 1 the highest, with no rank given to two items and no rank skipped (the ranks already given count);
 - open_text: a genuine free-text answer that follows any stated text/length/format rule — never blank.
 Return JSON whose "answers" array contains ONLY the [NEEDS ANSWER] questions.
+```
+
+## `asked_questions`
+
+```python
+surveytwin.prompts.asked_questions(text: str) -> list[dict[str, Any]]
+```
+
+The questions a request asks, in the order asked, each as a dict with its answer
+details: its `id` (the `question_id` to answer under), `type`, `options` and
+the other fields listed under it. `text` is the user text of a request
+(`ModelRequest.user`), in any layout: the "Answer as" lines under each question,
+or a `Questions JSON:` list from an older version. It is meant for a Python
+function that stands in for a real model, as in the examples of
+[Running a plan](running.md); a real model reads the whole prompt.
+
+**Example**
+
+```python
+import surveytwin as st
+
+text = (
+    "Survey sequence:\nQ1:\nWould you recommend it?\nAnswer as:\n"
+    '{"id": "QID1", "type": "single_choice", "options": ["Yes", "No"]}\n\n'
+    'Answer each question under its "Answer as" line. IDs to answer, in order: ["QID1"]'
+)
+print(st.prompts.asked_questions(text))
+```
+
+```
+[{'id': 'QID1', 'type': 'single_choice', 'options': ['Yes', 'No']}]
 ```
 
 ## Changing the system instruction
@@ -316,13 +361,16 @@ Question Type: Single Choice
 Options:
  1 - Yes
  2 - No
+Answer as:
+{"id": "QID1", "type": "single_choice", "options": ["Yes", "No"]}
 
 Q2:
 What would you improve?
 Question Type: Text Entry
+Answer as:
+{"id": "QID2", "type": "open_text", "options": []}
 
-Questions JSON:
-[{"id": "QID1", "text": "Would you recommend it?", "type": "single_choice", "options": ["Yes", "No"]}, {"id": "QID2", "text": "What would you improve?", "type": "open_text", "options": []}]
+Answer each question under its "Answer as" line. IDs to answer, in order: ["QID1", "QID2"]
 
 Respond using JSON schema: {"answers":[{"question_id":"QID1","answer_value":"...","answer_label":"...","answer_raw":"..."}]}
 ```
@@ -342,7 +390,7 @@ print([message["role"] for message in preview.messages])
 ```
 
 ```
-ex-07 chat 716 8000
+ex-07 chat 722 8000
 ['system', 'user']
 ```
 

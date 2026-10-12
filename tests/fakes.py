@@ -7,13 +7,33 @@ import re
 
 import surveytwin as st
 
-_SCHEMA_MARK = "\n\nRespond using JSON schema"
+
+def asked_questions(user_text: str) -> list[dict]:
+    """The questions a prompt asks (``surveytwin.prompts.asked_questions``). Under
+    "Answer as", a question's own entry (not a row's, an item's or a write-in
+    box's) also gets ``printed_as``: the label printed above it."""
+    printed: dict[str, str] = {}
+    label = None
+    block: list[str] | None = None
+    for line in user_text.splitlines():
+        if re.fullmatch(r"Q\d+:", line.strip()):
+            label, block = line.strip()[:-1], None
+        elif line == "Answer as:":
+            block = []
+        elif block is not None and line.startswith('{"id": '):
+            block.append(json.loads(line)["id"])
+            for own in block:  # the entry whose ID the others extend
+                if label and all(o == own or o.startswith((f"{own}_", f"{own}#")) for o in block):
+                    printed[own] = label
+                else:
+                    printed.pop(own, None)
+        else:
+            block = None
+    return [{**q, **({"printed_as": printed[q["id"]]} if q["id"] in printed else {})} for q in st.prompts.asked_questions(user_text)]
 
 
 def answer_questions(user_text: str) -> list[dict[str, str]]:
-    start = user_text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-    end = user_text.index(_SCHEMA_MARK, start)
-    questions = json.loads(user_text[start:end])
+    questions = asked_questions(user_text)
     answers = []
     for q in questions:
         options = q.get("options") or []

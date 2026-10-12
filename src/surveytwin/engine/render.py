@@ -23,6 +23,7 @@ import re
 from functools import cached_property
 from typing import Any
 
+from ..prompts import layout as prompt_layout
 from ..prompts.picture_markers import picture_marker
 from ..qsf.html_text import keep_lines
 from ..spec.qualtrics import (
@@ -1366,7 +1367,8 @@ def _statement_labels_and_media(shown: Shown) -> tuple[list[str], list[list[dict
 
 def sequence_text(questions: list[dict[str, Any]]) -> str:
     """The survey text of a prompt: each question with its options, numbered
-    Q1, Q2, ... (text only is not numbered)."""
+    Q1, Q2, ... (text only is not numbered), and after each question the marker
+    where its answer details go (``prompts.layout``)."""
     chunks: list[str] = []
     number = 0
     for record in questions:
@@ -1381,7 +1383,11 @@ def sequence_text(questions: list[dict[str, Any]]) -> str:
             chunks.append(rendered)
         else:
             number += 1
-            chunks.append(f"Q{number}:\n{rendered}")
+            chunk = f"Q{number}:\n{rendered}"
+            if prompt_layout.markers_wanted():
+                # where this question's answer details go (prompts.layout)
+                chunk += "\n" + prompt_layout.answer_marker(shown.id, f"Q{number}")
+            chunks.append(chunk)
     return "\n\n".join(chunk for chunk in chunks if chunk).strip()
 
 

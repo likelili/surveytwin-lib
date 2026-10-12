@@ -13,7 +13,7 @@ import shutil
 from pathlib import Path
 
 import surveytwin as st
-from fakes import answer_questions
+from fakes import answer_questions, asked_questions
 
 ROOT = Path(__file__).resolve().parent.parent
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAE0lEQVR4nGM8ISfHAANMcBY6BwAm2gEKUjNC5gAAAABJRU5ErkJggg==")
@@ -26,8 +26,7 @@ def python_blocks(page: str) -> list[str]:
 def stand_in(request: st.ModelRequest) -> st.Reply:
     answers = answer_questions(request.user)
     ranks: dict[str, int] = {}
-    shown = request.user.split("Questions JSON:\n")[-1].split("\n\nRespond using JSON schema")[0]
-    groups = {q["id"]: q.get("rank_order_group_id") for q in json.loads(shown)}
+    groups = {q["id"]: q.get("rank_order_group_id") for q in asked_questions(request.user)}
     for answer in answers:  # a ranking's items get 1, 2, 3, ...
         group = groups.get(answer["question_id"])
         if group:

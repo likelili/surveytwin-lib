@@ -15,7 +15,7 @@ import json
 import re
 
 import surveytwin as st
-from fakes import accept_all_images
+from fakes import accept_all_images, asked_questions
 from flow_kit import LOOP_COFFEE_TEA, block, mc, qsf, te, when
 
 
@@ -34,16 +34,15 @@ class Recorder:
             text = request.user
             self.prompts.append(text)
             self.images.append(list(request.images))
-            start = text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-            questions = json.loads(text[start : text.index("\n\nRespond using JSON schema", start)])
-            # the label the survey text prints above each question ("Q2:\n<text>")
-            printed = {body.split("\n", 1)[0].strip(): f"Q{n}" for n, body in re.findall(r"(?m)^Q(\d+):\n(.+)$", current_text(text))}
+            questions = asked_questions(text)
+            # each question's text as the survey prints it ("Q2:\n<text>")
+            texts = {f"Q{n}": body.strip() for n, body in re.findall(r"(?m)^Q(\d+):\n(.+)$", current_text(text))}
             answers = []
             for q in questions:
                 value = self.rule(q, text)
                 if value is None:
-                    value = (q.get("options") or [None])[0] or f"answer to {q['text']}"
-                qid = printed.get(q["text"].strip(), q["id"]) if self.by_label else q["id"]  # a model that names answers by the printed labels
+                    value = (q.get("options") or [None])[0] or f"answer to {texts.get(q.get('printed_as'), q['id'])}"
+                qid = q.get("printed_as", q["id"]) if self.by_label else q["id"]  # a model that names answers by the printed labels
                 answers.append({"question_id": qid, "answer_value": value, "answer_label": value, "answer_raw": value})
             return st.Reply(text=json.dumps({"answers": answers}), input_tokens=1, output_tokens=1)
 
@@ -64,13 +63,12 @@ def rows_of(results, twin_id):
 def current_text(prompt):
     """The part of a staged prompt that shows this stage's survey."""
     if "Current stage survey text:\n" in prompt:
-        return prompt.split("Current stage survey text:\n", 1)[1].split("Questions JSON:", 1)[0]
-    return prompt.split("Questions JSON:", 1)[0]
+        prompt = prompt.split("Current stage survey text:\n", 1)[1]
+    return re.split(r"Questions JSON|Answer each question under", prompt, maxsplit=1)[0]
 
 
 def asked_ids(prompt):
-    start = prompt.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-    return [q["id"] for q in json.loads(prompt[start : prompt.index("\n\nRespond using JSON schema", start)])]
+    return [q["id"] for q in asked_questions(prompt)]
 
 
 def labels_csv(results, tmp_path):

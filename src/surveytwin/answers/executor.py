@@ -22,6 +22,7 @@ import httpx
 
 from ..providers.openai_client import extract_json_string
 from ..personas.wrapping import CT_SYSTEM_INSTRUCTION
+from ..prompts import layout as prompt_layout
 from ..prompts.picture_markers import PICTURE_MARKER_RE, picture_markers_as_text
 
 logger = logging.getLogger(__name__)
@@ -782,9 +783,9 @@ def _rank_order_rule(question: dict[str, Any]) -> str:
     return "Assign this item a unique rank; 1 means highest preference." + count_rule
 
 
-def _prompt_question_text(question: dict[str, Any]) -> str:
-    text = str(question.get("text", "") or "")
-    instructions = [
+def _question_rules(question: dict[str, Any]) -> list[str]:
+    """A question's answer rules as words (required, defaults, limits, picks)."""
+    return [
         item
         for item in (
             _response_requirement_instruction(question),
@@ -798,6 +799,11 @@ def _prompt_question_text(question: dict[str, Any]) -> str:
         )
         if item
     ]
+
+
+def _prompt_question_text(question: dict[str, Any]) -> str:
+    text = str(question.get("text", "") or "")
+    instructions = _question_rules(question)
     if not instructions:
         return text
     instruction_text = " ".join(instructions)
@@ -1222,11 +1228,14 @@ def _build_multimodal_input_items(
     survey_sequence_text: str | None,
     survey_sequence_media: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    system_prompt, persona_prompt, questions_prompt = build_simulation_prompt_parts(
+    system_prompt, persona_prompt, _ = build_simulation_prompt_parts(
         persona_text,
         questions,
         survey_sequence_text=None,
     )
+    # The survey text with each question's answer details where the layout puts
+    # them (picture markers stay: the pictures are sent at them below).
+    arranged_sequence, questions_prompt = arranged_questions_prompt(questions, survey_sequence_text, pictures_as_text=False)
 
     user_content: list[dict[str, Any]] = [
         {"type": "input_text", "text": persona_prompt},
@@ -1242,7 +1251,7 @@ def _build_multimodal_input_items(
         if isinstance(media, dict) and str(media.get("key", "")).strip()
     }
     placed: set[str] = set()
-    cleaned_sequence = str(survey_sequence_text or "").strip()
+    cleaned_sequence = arranged_sequence
     if cleaned_sequence:
         sequence_parts, placed = _picture_parts(f"Survey sequence:\n{cleaned_sequence}", pictures_by_key)
         user_content.extend(sequence_parts)
@@ -1483,7 +1492,20 @@ def build_persona_batch_item(
 # prompt (survey mode: config page → preview survey → system prompt). The
 # format contract below it is NEVER editable — it is what keeps the answers
 # machine-parseable — and is always appended after the instruction.
+# The default is the instruction of the "Funhouse Mirror" digital-twin study,
+# its two section names changed to this prompt's ('Survey sequence', 'Persona
+# profile') and the profile described without calling it survey responses (a
+# profile can be a summary, or demographics only). Prompt version 5.
 DEFAULT_SYSTEM_INSTRUCTION = (
+    "You are an AI assistant. Your task is to answer the survey questions in the 'Survey sequence' "
+    "as if you are the person described in the 'Persona profile' "
+    "(which consists of their past responses to questions and other things they have expressed).\n"
+    "Adhere to the persona by being consistent with their previous answers and stated characteristics.\n"
+    "Follow all instructions provided for the new questions carefully regarding the format of your answer."
+)
+
+# The instruction before prompt version 5.
+PREVIOUS_SYSTEM_INSTRUCTION = (
     "You are a survey simulation respondent. Stay faithful to the persona context."
 )
 
@@ -1535,11 +1557,8 @@ SIMULATION_FORMAT_CONTRACT = (
 SIMULATION_SYSTEM_PROMPT = f"{DEFAULT_SYSTEM_INSTRUCTION} {SIMULATION_FORMAT_CONTRACT}"
 
 
-def build_simulation_prompt_parts(
-    persona_text: str,
-    questions: list[dict[str, Any]],
-    survey_sequence_text: str | None = None,
-) -> tuple[str, str, str]:
+def _prompt_entries(questions: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(the questions to answer, their Questions JSON entries), in order."""
     answerable_questions = [q for q in questions if not bool(q.get("prefill_only"))]
     prompt_questions = [
         {
@@ -1724,7 +1743,36 @@ def build_simulation_prompt_parts(
         }
         for idx, q in enumerate(answerable_questions)
     ]
+    return answerable_questions, prompt_questions
 
+
+def _compact_entry(entry: dict[str, Any], question: dict[str, Any]) -> dict[str, Any]:
+    """An entry without the question text (the survey shows it), its rules kept
+    as words: the details the ``after`` and ``inline`` layouts give."""
+    rules = " ".join(_question_rules(question))
+    rest = {key: value for key, value in entry.items() if key not in ("id", "text")}
+    return {"id": entry["id"], **({"rules": rules} if rules else {}), **rest}
+
+
+def arranged_questions_prompt(questions: list[dict[str, Any]], survey_sequence_text: str | None, *, pictures_as_text: bool = True) -> tuple[str, str]:
+    """(the survey text as the twin reads it, what follows it: the answer
+    details and the JSON schema) for the prompt layout in use (prompts.layout)."""
+    answerable_questions, prompt_questions = _prompt_entries(questions)
+    sequence = str(survey_sequence_text or "").strip()
+    if pictures_as_text:
+        sequence = picture_markers_as_text(sequence)
+    compact = [_compact_entry(entry, question) for entry, question in zip(prompt_questions, answerable_questions)]
+    arranged, block = prompt_layout.arrange(sequence, prompt_questions, compact, answerable_questions)
+    first_id = prompt_questions[0]["id"] if prompt_questions else "Q1"
+    schema = f'Respond using JSON schema: {{"answers":[{{"question_id":"{first_id}","answer_value":"...","answer_label":"...","answer_raw":"..."}}]}}'
+    return arranged.strip(), f"{block}\n\n{schema}"
+
+
+def build_simulation_prompt_parts(
+    persona_text: str,
+    questions: list[dict[str, Any]],
+    survey_sequence_text: str | None = None,
+) -> tuple[str, str, str]:
     # The exact-option rule keys off the PRESENCE of an `options` list, not a
     # hard-coded type list. The pipeline only ever emits four type strings
     # (single_choice, matrix, open_text, numeric); the old prompt named `likert`
@@ -1741,16 +1789,9 @@ def build_simulation_prompt_parts(
     # as the website adds it for bank runs.
     system_prompt = f"{system_prompt}\n{CT_SYSTEM_INSTRUCTION}"
     persona_prompt = f"Persona profile:\n{str(persona_text or '').strip()}\n\n"
-    sequence_block = ""
-    cleaned_sequence = picture_markers_as_text(str(survey_sequence_text or "").strip())
-    if cleaned_sequence:
-        sequence_block = f"Survey sequence:\n{cleaned_sequence}\n\n"
-    questions_prompt = (
-        f"{sequence_block}Questions JSON:\n"
-        f"{json.dumps(prompt_questions, ensure_ascii=False)}\n\n"
-        "Respond using JSON schema: "
-        f'{{"answers":[{{"question_id":"{prompt_questions[0]["id"] if prompt_questions else "Q1"}","answer_value":"...","answer_label":"...","answer_raw":"..."}}]}}'
-    )
+    arranged_sequence, questions_tail = arranged_questions_prompt(questions, survey_sequence_text)
+    sequence_block = f"Survey sequence:\n{arranged_sequence}\n\n" if arranged_sequence else ""
+    questions_prompt = f"{sequence_block}{questions_tail}"
 
     return system_prompt, persona_prompt.rstrip(), questions_prompt.rstrip()
 

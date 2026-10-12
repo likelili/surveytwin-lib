@@ -349,7 +349,7 @@ twins, the size of each Loop & Merge block and the warnings.
 | `twins` | `list[Twin]` | The sampled twins, in sample order. |
 | `warnings` | `list[str]` | What is worth knowing before running (listed under `plan`). A run's results repeat them. |
 | `population` | `int` | How many twins the survey's randomization is laid out for: the number of twins in the full plan. `head` keeps it, so each kept twin gets the same branches and orders as in the full plan. |
-| `prompt_version` | `str` | The version of the prompt texts (`"2"`), saved with results. |
+| `prompt_version` | `str` | The version of the prompt texts (`"5"`), saved with results. |
 | `loops` | `list[dict[str, Any]]` | Each Loop & Merge block a twin can be shown, as a dict: `block_id`, `name`, `rows` (every row is asked, or the size of a random subset), `questions` (per row) and `answers_per_row`. |
 | `twin_surveys` | `list[dict[str, Any]]` | For a static plan, each twin's copy of the survey, in the order of `twins` (described below). Empty for a staged plan, whose surveys unfold as the twins answer. |
 | `definition` | `dict[str, Any]` | The survey the plan runs, in the standard format (docs/reference/survey-format.md), without dropped blocks: what every static copy is made from, and what a staged run walks stage by stage. |
@@ -446,10 +446,10 @@ print("\n".join(preview.text.splitlines()[:3]))
 ```
 
 ```text
-multimodal 2 10716 12420
+multimodal 2 9421 12420
 === SYSTEM ===
-You are a survey simulation respondent. Stay faithful to the persona context. Return valid JSON only.
-CRITICAL — match the answer format to each question's fields:
+You are an AI assistant. Your task is to answer the survey questions in the 'Survey sequence' as if you are the person described in the 'Persona profile' (which consists of their past responses to questions and other things they have expressed).
+Adhere to the persona by being consistent with their previous answers and stated characteristics.
 ```
 
 ### `Plan.prompts`

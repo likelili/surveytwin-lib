@@ -99,7 +99,7 @@ def test_the_report_is_the_same_in_every_process(tmp_path):
 import sys, json
 sys.path[:0] = [{str(Path(__file__).parent)!r}, {str(src)!r}]
 import surveytwin as st
-from fakes import accept_all_images
+from fakes import accept_all_images, asked_questions
 from flow_kit import block, qsf
 form = {{"QuestionID": "QID1", "DataExportTag": "QID1", "QuestionText": "Name three brands", "QuestionType": "TE", "Selector": "FORM",
         "Configuration": {{"QuestionDescriptionOption": "UseText"}}, "Validation": {{"Settings": {{"ForceResponse": "OFF", "Type": "None"}}}},
@@ -109,8 +109,7 @@ brands = [["Acme", "Zeta", "Kilo"], ["Zeta", "Acme", "Lima"], ["Kilo", "Lima", "
 calls = iter(range(100))
 def reply(request):
     text = request.user
-    start = text.rindex("Questions JSON:\\n") + len("Questions JSON:\\n")
-    qs = json.loads(text[start: text.index("\\n\\nRespond using JSON schema", start)])
+    qs = asked_questions(text)
     names = brands[next(calls) % 4]
     answers = [{{"question_id": q["id"], "answer_value": names[i], "answer_label": names[i], "answer_raw": names[i]}} for i, q in enumerate(qs)]
     return st.Reply(text=json.dumps({{"answers": answers}}), input_tokens=1, output_tokens=1)

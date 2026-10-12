@@ -20,8 +20,7 @@ import surveytwin as st
 def stand_in(request, unusable=()):
     """A model for trying the library offline: the first option, the lowest
     number allowed, a short text, and a ranking's items ranked 1, 2, 3, ..."""
-    start = request.user.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-    questions = json.loads(request.user[start:request.user.index("\n\nRespond using JSON schema", start)])
+    questions = st.prompts.asked_questions(request.user)
     answers, ranks = [], {}
     for q in questions:
         if q["id"] in unusable:
@@ -219,7 +218,7 @@ print(results.usage_totals)
 ```
 
 ```
-{'calls': 6, 'input_tokens': 40202, 'output_tokens': 5860, 'reasoning_tokens': 0, 'total_tokens': 46062}
+{'calls': 6, 'input_tokens': 36177, 'output_tokens': 5860, 'reasoning_tokens': 0, 'total_tokens': 42037}
 ```
 
 ### `Results.summary_stats`

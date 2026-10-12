@@ -399,4 +399,4 @@ def test_new_statements_replace_the_side_by_side_rows_the_twin_reads():
     assert [[r["label"] for r in f["response"]["rows"]] for f in q["response"]["fields"]] == [["Purr", "Bark", "Swim"]] * 2
     assert "sbs" not in q["source"]  # the copy of the old statements went with them
     text = st.plan(edited, st.configure(bank=BANK, sample_size=1, seed=1, model=scripted_model())).preview_prompt().text
-    assert "Cats - Swim" in text and "Dogs - Swim" in text
+    assert '"row": "Cats, Swim"' in text and '"row": "Dogs, Swim"' in text

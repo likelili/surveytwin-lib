@@ -10,7 +10,7 @@ screen-out on them never ends a survey. Static and staged runs agree.
 from __future__ import annotations
 
 import surveytwin as st
-from fakes import accept_all_images
+from fakes import accept_all_images, asked_questions
 from flow_kit import answering, block, branch, embedded, end, group, mc, qsf, te, when, when_field
 from surveytwin.spec.read_template import survey_from_template
 
@@ -145,8 +145,7 @@ def staged_prompts(data, mini_bank):
     def reply(request):
         prompts.append(request.user)
         text = request.user
-        start = text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-        questions = _json.loads(text[start: text.index("\n\nRespond using JSON schema", start)])
+        questions = asked_questions(text)
         answers = []
         for q in questions:
             value = (q.get("options") or ["fine"])[0]
@@ -199,8 +198,7 @@ def options_offered(prompts, qid):
     import json as _json
 
     for text in prompts:
-        start = text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-        for q in _json.loads(text[start: text.index("\n\nRespond using JSON schema", start)]):
+        for q in asked_questions(text):
             if q["id"] == qid:
                 return q.get("options")
     return None
@@ -213,9 +211,8 @@ def picking(prompts, choices):
     def reply(request):
         prompts.append(request.user)
         text = request.user
-        start = text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
         answers = []
-        for q in _json.loads(text[start: text.index("\n\nRespond using JSON schema", start)]):
+        for q in asked_questions(text):
             value = choices.get(q["id"]) or (q.get("options") or ["fine"])[0]
             answers.append({"question_id": q["id"], "answer_value": value, "answer_label": value, "answer_raw": value})
         return st.Reply(text=_json.dumps({"answers": answers}), input_tokens=1, output_tokens=1)
@@ -421,8 +418,7 @@ def test_carried_text_brings_its_image_once(mini_bank):
         import json as _json
         seen.append(list(request.images or []))
         text = request.user
-        start = text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-        qs = _json.loads(text[start: text.index("\n\nRespond using JSON schema", start)])
+        qs = asked_questions(text)
         answers = [{"question_id": q["id"], "answer_value": (q.get("options") or ["fine"])[0], "answer_label": (q.get("options") or ["fine"])[0],
                     "answer_raw": "x"} for q in qs]
         return st.Reply(text=_json.dumps({"answers": answers}), input_tokens=1, output_tokens=1)

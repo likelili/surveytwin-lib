@@ -8,6 +8,8 @@ import itertools
 import json
 from typing import Any, Callable
 
+from fakes import asked_questions
+
 _flow_ids = itertools.count(10)
 
 
@@ -100,8 +102,7 @@ def answering(rule: Callable[[dict[str, Any]], str | None]):
 
     def reply(request):
         text = request.user
-        start = text.rindex("Questions JSON:\n") + len("Questions JSON:\n")
-        questions = json.loads(text[start : text.index("\n\nRespond using JSON schema", start)])
+        questions = asked_questions(text)
         answers = []
         for q in questions:
             value = rule(q)

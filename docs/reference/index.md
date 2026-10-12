@@ -115,6 +115,7 @@ run(plan)              ->  Results     every answer, the export files, the repor
 | [`surveytwin.prompts.SIMULATION_FORMAT_CONTRACT`](prompts.md#simulation_format_contract) | constant |
 | [`surveytwin.prompts.RERUN_INSTRUCTION`](prompts.md#rerun_instruction) | constant |
 | [`surveytwin.prompts.CT_SYSTEM_INSTRUCTION`](prompts.md#ct_system_instruction) | constant |
+| [`surveytwin.prompts.asked_questions`](prompts.md#asked_questions) | function |
 
 Classes the public objects return but that are not exported themselves (such as
 `FilterField`, `Representation`, `EmbeddedField` and `Dependency`) are documented

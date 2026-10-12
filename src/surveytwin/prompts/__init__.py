@@ -7,6 +7,8 @@ answer reader finds answers by that shape and its keys (decided on 2026-09-25).
 
 from __future__ import annotations
 
+from .layout import asked_questions  # noqa: F401 - public: reads the questions a prompt asks
+
 # Version of the prompt text. Raised whenever any prompt text changes; recorded in
 # every result. "1" is the website's prompt text on main b1679f8b, with the
 # bank safety line always present (every persona comes from a bank). "2": question
@@ -15,8 +17,11 @@ from __future__ import annotations
 # table, and a MaxDiff pair is not asked again during a run while a
 # rerun asks it with its rule. "4": a rerun asks a ranking again with its rule
 # (a unique rank from 1 to N), and the rerun instruction says no rank may be
-# given twice or skipped.
-PROMPT_VERSION = "4"
+# given twice or skipped. "5": the default instruction is the Funhouse Mirror
+# study's (the profile not called survey responses), and each question's answer
+# details sit under it in the survey ("Answer as:", prompts.layout) instead of a
+# Questions JSON list repeating every question.
+PROMPT_VERSION = "5"
 
 
 def __getattr__(name: str):
